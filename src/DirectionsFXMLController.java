@@ -8,7 +8,7 @@ import com.lynden.gmapsfx.service.directions.*;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.*;
-
+import com.lynden.gmapsfx.service.geocoding.GeocoderAddressComponent;
 import com.lynden.gmapsfx.service.geocoding.GeocoderStatus;
 import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
 import com.lynden.gmapsfx.service.geocoding.GeocodingService;
@@ -20,10 +20,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
@@ -98,6 +95,23 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     }
 
     @FXML
+    public void revGeocode(ActionEvent event) {
+        double lat = Double.parseDouble(latitudeText.getText());
+        double lon = Double.parseDouble(longitudeText.getText());
+        geocodingService.reverseGeocode(lat, lon, (GeocodingResult[] results, GeocoderStatus status) -> {
+            GeocodingResult location = results[0];
+            List<GeocoderAddressComponent> addressComponents = location.getAddressComponents();
+            StringBuilder post = new StringBuilder();
+            for (GeocoderAddressComponent partial : addressComponents) {
+                post.append(partial.getShortName() + " ");
+            }
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, post.toString());
+            alert.show();
+        });
+    }
+
+    @FXML
     private void toTextFieldAction(ActionEvent event) {
         enterDirections(event);
     }
@@ -150,7 +164,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         // init underlay map
         options.center(new LatLong(39.709860, -75.118948))
                 .zoomControl(true)
-                .zoom(16)
+                .zoom(18)
                 .overviewMapControl(false)
                 .mapType(MapTypeIdEnum.SATELLITE)
                 .streetViewControl(true);

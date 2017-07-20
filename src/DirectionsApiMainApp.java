@@ -6,10 +6,13 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 /**
+ * For more info see: http://rterp.github.io/GMapsFX/apidocs/
+ *
  * In the event of the slf4j distro being incorrect, try...
- * lf4j-api-1.7.22.jar
- * slf4j-simple-1.7.22.jar
+ *      * lf4j-api-1.7.22.jar
+ *      * slf4j-simple-1.7.22.jar
  * These two worked and this is a note of that
+ *
  */
 public class DirectionsApiMainApp extends Application {
 
