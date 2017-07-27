@@ -1,17 +1,22 @@
 
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
-import com.lynden.gmapsfx.javascript.event.GMapMouseEvent;
-import com.lynden.gmapsfx.javascript.event.UIEventType;
+import com.lynden.gmapsfx.javascript.event.*;
 import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.directions.*;
+
+import java.io.IOException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.List;
+
 import com.lynden.gmapsfx.service.geocoding.GeocoderAddressComponent;
 import com.lynden.gmapsfx.service.geocoding.GeocoderStatus;
 import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
 import com.lynden.gmapsfx.service.geocoding.GeocodingService;
+import com.lynden.gmapsfx.shapes.*;
+import com.lynden.gmapsfx.shapes.Polygon;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
@@ -21,6 +26,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.TextField;
+import netscape.javascript.JSObject;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
@@ -28,6 +35,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private DirectionsService directionsService;
     private DirectionsPane directionsPane;
     private DecimalFormat formatter = new DecimalFormat("###.00000");
+
+    protected KMLBuilder kmlBuilder = new KMLBuilder();
 
     protected StringProperty from = new SimpleStringProperty();
     protected StringProperty to = new SimpleStringProperty();
@@ -88,7 +97,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             latitudeText.setText(formatter.format(lat));
             longitudeText.setText(formatter.format(lon));
 
-            map.setCenter(new LatLong(lat, lon));
+            LatLong latlon = new LatLong(lat, lon);
+            map.setCenter(latlon);
             map.setZoom(18);
             map.setMapType(MapTypeIdEnum.SATELLITE);
         });
@@ -96,19 +106,24 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     @FXML
     public void revGeocode(ActionEvent event) {
-        double lat = Double.parseDouble(latitudeText.getText());
-        double lon = Double.parseDouble(longitudeText.getText());
-        geocodingService.reverseGeocode(lat, lon, (GeocodingResult[] results, GeocoderStatus status) -> {
-            GeocodingResult location = results[0];
-            List<GeocoderAddressComponent> addressComponents = location.getAddressComponents();
-            StringBuilder post = new StringBuilder();
-            for (GeocoderAddressComponent partial : addressComponents) {
-                post.append(partial.getShortName() + " ");
-            }
+        try {
+            double lat = Double.parseDouble(latitudeText.getText());
+            double lon = Double.parseDouble(longitudeText.getText());
+            geocodingService.reverseGeocode(lat, lon, (GeocodingResult[] results, GeocoderStatus status) -> {
+                GeocodingResult location = results[0];
+                List<GeocoderAddressComponent> addressComponents = location.getAddressComponents();
+                StringBuilder post = new StringBuilder();
+                for (GeocoderAddressComponent partial : addressComponents) {
+                    post.append(partial.getShortName() + " ");
+                }
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, post.toString());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, post.toString());
+                alert.show();
+            });
+        } catch (Exception ex) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid Lat and Long");
             alert.show();
-        });
+        }
     }
 
     @FXML
@@ -162,8 +177,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         MapOptions options = new MapOptions();
 
         // init underlay map
-        options.center(new LatLong(39.709860, -75.118948))
-                .zoomControl(true)
+        options.zoomControl(true)
                 .zoom(18)
                 .overviewMapControl(false)
                 .mapType(MapTypeIdEnum.SATELLITE)
@@ -171,6 +185,108 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         map = mapView.createMap(options);
         directionsService = new DirectionsService();
         directionsPane = mapView.getDirec();
+
+        geocodingService.geocode("Rowan University, Glassboro NJ", (GeocodingResult[] results, GeocoderStatus status) -> {
+                    double lat, lon;
+                    GeocodingResult location = results[0];
+                    lat = location.getGeometry().getLocation().getLatitude();
+                    lon = location.getGeometry().getLocation().getLongitude();
+                    LatLong rowan = new LatLong(lat, lon);
+                    MarkerOptions markerOptions1 = new MarkerOptions();
+                    markerOptions1.position(rowan);
+                    Marker mark = new Marker(markerOptions1);
+                    map.addMarker(mark);
+
+                    InfoWindowOptions infoWindowOptions = new InfoWindowOptions();
+                    infoWindowOptions.content("<h2>Rowan</h2> Current Location: Robinson Hall<br>");
+                    InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
+                    fredWilkeInfoWindow.open(map, mark);
+
+                    LatLong latlon = new LatLong(lat + 0.001, lon + 0.001);
+                    map.setCenter(latlon);
+
+//                    Circle c = new Circle(new CircleOptions()
+//                            .center(latlon)
+//                            .radius(50.0)
+//                            .fillColor("Red")
+//                            .strokeColor("blue")
+//                            .strokeWeight(2)
+//                            .visible(true)
+//                    );
+//                    map.addMapShape(c);
+
+            ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170727_133342.kml");
+            LatLong[] cAry = new LatLong[from_kml.get(0).size()];
+            for (int i = 0; i < from_kml.get(0).size(); i ++) {
+                cAry[i] = new LatLong(from_kml.get(0).get(i)[1], from_kml.get(0).get(i)[0]); //NOTE, switch lat and long here for proper location
+            }
+
+            MVCArray cmvc = new MVCArray(cAry);
+            PolygonOptions circleOpts = new PolygonOptions()
+                    .paths(cmvc)
+                    .strokeColor("blue")
+                    .strokeWeight(2)
+                    .editable(false)
+                    .fillColor("red")
+                    .fillOpacity(0.5);
+            Polygon c = new Polygon(circleOpts);
+            map.addMapShape(c);
+
+            ArrayList<double[]> circle_points = CircleMaker.yield_circ(latlon.getLatitude(), latlon.getLongitude(), 0.001);
+            ArrayList<LatLong> circle_latlons = new ArrayList<LatLong>();
+            for (double[] pair : circle_points) {
+                circle_latlons.add(new LatLong(pair[0], pair[1]));
+            }
+
+            map.addUIEventHandler(c, UIEventType.click, new UIEventHandler() {
+                @Override
+                public void handle(JSObject obj) {
+                    try {
+                        String poly = kmlBuilder.polygon(circle_latlons, new ArrayList<LatLong>(), "Test");
+                        kmlBuilder.createFile(poly);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+
+            map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
+                @Override
+                public void handle() {
+                    System.out.println(map.getCenter().toString());
+                }
+            });
+
+                    LatLong poly1 = new LatLong(lat + .0005, lon - .0005);
+                    LatLong poly2 = new LatLong(lat + .0005, lon + .0005);
+                    LatLong poly3 = new LatLong(lat - .0005, lon + .0005);
+                    LatLong poly4 = new LatLong(lat - .0005, lon - .0005);
+                    LatLong[] pAry = new LatLong[]{poly1, poly2, poly3, poly4};
+                    MVCArray pmvc = new MVCArray(pAry);
+
+                    PolygonOptions polygOpts = new PolygonOptions()
+                            .paths(pmvc)
+                            .strokeColor("red")
+                            .strokeWeight(2)
+                            .editable(false)
+                            .fillColor("Blue")
+                            .fillOpacity(0.5);
+                    Polygon pg = new Polygon(polygOpts);
+                    map.addMapShape(pg);
+
+                    map.addUIEventHandler(pg, UIEventType.click, new UIEventHandler() {
+                        @Override
+                        public void handle(JSObject obj) {
+                            try {
+                                String poly = kmlBuilder.polygon(Arrays.asList(pAry), new ArrayList<LatLong>(), "Test");
+                                kmlBuilder.createFile(poly);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    });
+                });
+
 
         // Style the showMe text field
         showMe.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
