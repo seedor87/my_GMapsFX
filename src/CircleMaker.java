@@ -82,7 +82,7 @@ public class CircleMaker extends Application {
 
     public static ArrayList<double[]> yield_circ(double xc, double yc , double radius) {
         ArrayList<double[]> ret = new ArrayList<double[]>();
-        for (double i = 0; i < 2; i += 0.05) {
+        for (double i = 0; i < 2; i += 0.01) {
             double x = xc + (radius * Math.cos(i * Math.PI));
             double y = yc + (radius * Math.sin(i * Math.PI));
             ret.add(new double[]{x, y});

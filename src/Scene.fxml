@@ -8,33 +8,72 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
 <AnchorPane id="AnchorPane" prefHeight="900.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="DirectionsFXMLController">
+
    <children>
       <GoogleMapView fx:id="mapView" layoutX="-311.0" layoutY="-244.0" prefWidth="490.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
 
-      <TextField fx:id="fromTextField" prefHeight="27.0" prefWidth="222.0" promptText="From:" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="80.0" />
-      <TextField fx:id="toTextField" layoutX="10.0" layoutY="10.0" onAction="#toTextFieldAction" prefHeight="27.0" prefWidth="222.0" promptText="To:" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="120.0" />
-      <Button fx:id="clearButton" AnchorPane.leftAnchor="125.0" AnchorPane.topAnchor="160.0" mnemonicParsing="false" onAction="#clearDirections" text="Clear" />
-      <Button fx:id="enterButton" AnchorPane.leftAnchor="175.0" AnchorPane.topAnchor="160.0" mnemonicParsing="false" onAction="#enterDirections" text="GO" />
-
-      <ComboBox fx:id="typeCombo" prefHeight="27.0" prefWidth="100.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="160.0" promptText="Map Type">
+      <ToolBar fx:id = "toolBarTop" style="-fx-alignment: CENTER" prefHeight="60.0" styleClass="spacer" AnchorPane.topAnchor="10.0">
          <items>
-            <FXCollections fx:factory="observableArrayList">
-               <String fx:value="Roadmap" />
-               <String fx:value="Satellite" />
-               <String fx:value="Hybrid" />
-               <String fx:value="Terrain" />
-            </FXCollections>
+            <HBox alignment="CENTER_LEFT">
+               <VBox>
+                  <TextField fx:id="fromTextField" prefHeight="27.0" prefWidth="150.0" promptText="From:" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="80.0" />
+                  <TextField fx:id="toTextField" layoutX="10.0" layoutY="10.0" onAction="#toTextFieldAction" prefHeight="27.0" prefWidth="150.0" promptText="To:" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="120.0" />
+               </VBox>
+               <VBox>
+                  <Button fx:id="clearButton" AnchorPane.leftAnchor="125.0" AnchorPane.topAnchor="160.0" mnemonicParsing="false" onAction="#clearDirections" text="Clear" />
+                  <Button fx:id="enterButton" AnchorPane.leftAnchor="175.0" AnchorPane.topAnchor="160.0" mnemonicParsing="false" onAction="#enterDirections" text="GO" />
+               </VBox>
+            </HBox>
+
+            <ToolBar HBox.hgrow="ALWAYS" />
+
+            <HBox alignment="CENTER">
+               <TextField fx:id="showMe" style="-fx-text-inner-color: red;" prefHeight="27.0" prefWidth="450.0" promptText="type in a destination, and press enter..." AnchorPane.leftAnchor="300.0" AnchorPane.topAnchor ="20.0" onAction="#showMe" />
+            </HBox>
+
+            <ToolBar HBox.hgrow="ALWAYS" />
+
+            <HBox alignment="CENTER_RIGHT">
+               <VBox>
+                  <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="75.0" promptText="lat:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
+                  <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="75.0" promptText="long:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="50.0" />
+               </VBox>
+               <Button fx:id="revGeocode" prefHeight="25" prefWidth="75" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="90.0" mnemonicParsing="false" onAction="#revGeocode" text="find" />
+
+               <Separator></Separator>
+               <ComboBox fx:id="typeCombo" prefHeight="27.0" prefWidth="100.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="160.0" promptText="Map Type">
+                  <items>
+                     <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="Roadmap" />
+                        <String fx:value="Satellite" />
+                        <String fx:value="Hybrid" />
+                        <String fx:value="Terrain" />
+                     </FXCollections>
+                  </items>
+               </ComboBox>
+
+               <ComboBox fx:id="drawCombo" prefHeight="27.0" prefWidth="100.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="160.0" promptText="Drawing Type">
+                  <items>
+                     <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="None" />
+                        <String fx:value="Circle" />
+                        <String fx:value="Square" />
+                        <String fx:value="Polygon" />
+                     </FXCollections>
+                  </items>
+               </ComboBox>
+            </HBox>
+
          </items>
-      </ComboBox>
-
-      <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="75.0" promptText="lat:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
-      <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="75.0" promptText="long:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="50.0" />
-      <Button fx:id="revGeocode" prefHeight="25" prefWidth="75" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="90.0" mnemonicParsing="false" onAction="#revGeocode" text="find" />
-
-      <Button fx:id="debugAction" prefHeight="25" prefWidth="75" AnchorPane.leftAnchor="10.0" AnchorPane.bottomAnchor="10.0" mnemonicParsing="false" onAction="#debugAction" text=";)" />
-
-      <TextField fx:id="showMe" stylesheets="Styles.css" prefHeight="27.0" prefWidth="450.0" promptText="type in a destination, and press enter..." AnchorPane.leftAnchor="300.0" AnchorPane.topAnchor ="20.0" onAction="#showMe" />
+      </ToolBar>
 
    </children>
 </AnchorPane>
