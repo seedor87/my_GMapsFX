@@ -41,6 +41,7 @@ public class KMLBuilder {
      * @param content
      * @throws IOException
      */
+    //TODO: PROB HAVE TO EDIT THIS ONE IN ORDER TO KEEP THE KML FILE OPEN
     public void createFile(String content) throws IOException {
         if (fileName == "") {
             fileName = getFileName();
