@@ -1,6 +1,7 @@
 
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
+import com.lynden.gmapsfx.javascript.JavascriptObject;
 import com.lynden.gmapsfx.javascript.event.*;
 import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.directions.*;
@@ -27,6 +28,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
@@ -171,6 +173,49 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         from.bindBidirectional(fromTextField.textProperty());
     }
 
+
+    /**
+     * Is called later in code, when the application is closed.
+     * Uses kmlBuilder field to create the KML file.
+     */
+    public void closeFile() {
+        // After the polygons are all added, do createFile to finish.
+        try {
+            kmlBuilder.createFile();
+        }
+        catch(IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Literally just copied and pasted from earlier
+     *
+     * @param filePath
+     * @param map
+     * @return Polygon c
+     */
+    private Polygon makeArray4Shape(String filePath, GoogleMap map){
+        ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists(filePath);
+        LatLong[] cAry = new LatLong[from_kml.get(0).size()];
+        for (int i = 0; i < from_kml.get(0).size(); i ++) {
+            cAry[i] = new LatLong(from_kml.get(0).get(i)[1], from_kml.get(0).get(i)[0]); //NOTE, switch lat and long here for proper location
+        }
+
+        MVCArray cmvc = new MVCArray(cAry);
+        PolygonOptions circleOpts = new PolygonOptions()
+                .paths(cmvc)
+                .strokeColor("blue")
+                .strokeWeight(2)
+                .editable(false)
+                .fillColor("red")
+                .fillOpacity(0.5);
+        Polygon c = new Polygon(circleOpts);
+        map.addMapShape(c);
+
+        return c;
+    }
+
     @Override
     public void mapInitialized() {
         geocodingService = new GeocodingService();
@@ -215,22 +260,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 //                    );
 //                    map.addMapShape(c);
 
-            ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170727_133342.kml");
-            LatLong[] cAry = new LatLong[from_kml.get(0).size()];
-            for (int i = 0; i < from_kml.get(0).size(); i ++) {
-                cAry[i] = new LatLong(from_kml.get(0).get(i)[1], from_kml.get(0).get(i)[0]); //NOTE, switch lat and long here for proper location
-            }
-
-            MVCArray cmvc = new MVCArray(cAry);
-            PolygonOptions circleOpts = new PolygonOptions()
-                    .paths(cmvc)
-                    .strokeColor("blue")
-                    .strokeWeight(2)
-                    .editable(false)
-                    .fillColor("red")
-                    .fillOpacity(0.5);
-            Polygon c = new Polygon(circleOpts);
-            map.addMapShape(c);
+            Polygon c = makeArray4Shape("C:\\Users\\Brooke\\IdeaProjects\\my_GMapsFX\\20170727_133342.kml", map);
 
             ArrayList<double[]> circle_points = CircleMaker.yield_circ(latlon.getLatitude(), latlon.getLongitude(), 0.001);
             ArrayList<LatLong> circle_latlons = new ArrayList<LatLong>();
@@ -242,8 +272,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 @Override
                 public void handle(JSObject obj) {
                     try {
-                        String poly = kmlBuilder.polygon(circle_latlons, new ArrayList<LatLong>(), "Test");
-                        kmlBuilder.createFile(poly);
+                        String poly = kmlBuilder.polygon(circle_latlons, new ArrayList<LatLong>(), "Test for Circle");
+                        kmlBuilder.appendTo(poly);
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -264,6 +294,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                     LatLong[] pAry = new LatLong[]{poly1, poly2, poly3, poly4};
                     MVCArray pmvc = new MVCArray(pAry);
 
+                    //makes the square polygon - CURRENTLY not being made into a kml file tho... weird
                     PolygonOptions polygOpts = new PolygonOptions()
                             .paths(pmvc)
                             .strokeColor("red")
@@ -278,14 +309,23 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         @Override
                         public void handle(JSObject obj) {
                             try {
-                                String poly = kmlBuilder.polygon(Arrays.asList(pAry), new ArrayList<LatLong>(), "Test");
-                                kmlBuilder.createFile(poly);
+                                String poly = kmlBuilder.polygon(Arrays.asList(pAry), new ArrayList<LatLong>(), "Test for Square");
+                                kmlBuilder.appendTo(poly);
                             } catch (IOException ex) {
                                 ex.printStackTrace();
                             }
                         }
                     });
                 });
+
+
+
+        //New code from Brooke: grabs the primaryStage field from the DirectionsApiMainApp and handles the
+        //event "exit the application" field to carry out the closeField method
+        Stage s = DirectionsApiMainApp.getPrimaryStage();
+        s.setOnCloseRequest(event -> {
+            closeFile();
+        });
 
 
         // Style the showMe text field
@@ -326,6 +366,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             latitudeText.setText(formatter.format(latLong.getLatitude()));
             longitudeText.setText(formatter.format(latLong.getLongitude()));
         });
-    }
+    } //end of mapInitialized() method
 
 }
