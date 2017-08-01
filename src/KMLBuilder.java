@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
-import java.util.List;
+import java.util.*;
+//import java.util.HashMap;
+//import java.util.List;
+//import java.util.UUID;
 
 /**
  * Created by eliakah on 9/16/16.
@@ -16,11 +19,19 @@ public class KMLBuilder {
 
     String fileName = ""; //file name
     String description = ""; //file description
+    StringBuffer stringBuffer;
+    HashMap<String,String> map;
+    private PrintWriter writer;
+
 
     /**
      * empty constructor
      */
     public KMLBuilder() {
+
+         stringBuffer = new StringBuffer();
+        map = new HashMap<String,String>();
+
 
     }
 
@@ -33,19 +44,21 @@ public class KMLBuilder {
     public KMLBuilder(String fileName, String description) {
         this.fileName = fileName + ".kml";
         this.description = description;
+        stringBuffer = new StringBuffer();
+        map = new HashMap<String,String>();
     }
 
     /**
      * This generates & writes the KML file using the helper methods.
      *
-     * @param content
      * @throws IOException
      */
-    //TODO: PROB HAVE TO EDIT THIS ONE IN ORDER TO KEEP THE KML FILE OPEN
-    public void createFile(String content) throws IOException {
+    public void createFile() throws IOException {
         if (fileName == "") {
             fileName = getFileName();
         }
+
+        String content = stringBuffer.toString();
 
         String str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n" +
@@ -63,7 +76,7 @@ public class KMLBuilder {
 
         if (outPutFile.createNewFile()) {
             String text = "";
-            PrintWriter writer = new PrintWriter(
+            writer = new PrintWriter(
                     fileName, "UTF-8");
             writer.write(str);
             writer.close();
@@ -72,6 +85,30 @@ public class KMLBuilder {
         }
 
 
+    }
+
+    /**
+     * appendTo method allows more Polygons to be added to the
+     * open kml file by adding them to the MAP list
+     * Also checks that a polygon is not already in the kml file
+     */
+    public void appendTo(String content) throws IOException{
+        boolean inMap = false;
+        for(Map.Entry m:map.entrySet()){
+            if(m.getValue().equals(content)) {
+                inMap = true;
+            }
+        }
+        if(!inMap) //the content is not already in the MAP
+        {
+            String uniqueID = UUID.randomUUID().toString();
+            map.put(uniqueID, content);
+            //add content to map with unique ID
+            stringBuffer.append(content).append(System.getProperty("line.separator"));
+        }
+        else {
+            System.out.println("Polygon is already in the KML file.");
+        }
     }
 
 

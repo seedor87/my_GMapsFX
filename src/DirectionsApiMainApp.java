@@ -16,8 +16,12 @@ import javafx.stage.Stage;
  */
 public class DirectionsApiMainApp extends Application {
 
+    private static Stage primaryStage;
+
     @Override
     public void start(Stage stage) throws Exception {
+        setPrimaryStage(stage);
+
         Parent root = FXMLLoader.load(getClass().getResource("Scene.fxml"));
         
         Scene scene = new Scene(root);
@@ -26,6 +30,24 @@ public class DirectionsApiMainApp extends Application {
         stage.setTitle("Directions API Example");
         stage.setScene(scene);
         stage.show();
+    }
+
+    /**
+     * Sets the primaryStage field to the stage in parameter.
+     *
+     * @param stage
+     */
+    private void setPrimaryStage(Stage stage) {
+        DirectionsApiMainApp.primaryStage = stage;
+    }
+
+    /**
+     * Grabs the primaryStage field.
+     *
+     * @return primaryStage field
+     */
+    static public Stage getPrimaryStage() {
+        return DirectionsApiMainApp.primaryStage;
     }
 
     /**
