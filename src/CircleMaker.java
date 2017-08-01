@@ -15,11 +15,15 @@ import java.util.*;
 
 public class CircleMaker extends Application {
 
+    static double xc = 100.0;
+    static double yc = 100.0;
     private static ArrayList<double[]> result;
+
     public static void main(String[] args) {
-        result = yield_circ(0.0, 0.0, 50.0);
+
+        result = yield_circ(xc, yc, 50.0);
         for (double[] pair : result) {
-            System.out.println(pair[0] + ", " + pair[1]);
+//            System.out.println(pair[0] + ", " + pair[1]);
         }
 
         launch(args);
@@ -36,22 +40,12 @@ public class CircleMaker extends Application {
 
         gc.setLineWidth(5);
 
-        double offset = 100;
-        gc.fillOval(offset, offset, 5, 5);
+        gc.fillOval(xc, yc, 5, 5);
         for (double[] ll : result) {
-            double lat = ll[0] + offset;
-            double lon = ll[1] + offset;
+            double lat = ll[0];
+            double lon = ll[1];
             gc.fillOval(lat, lon, 5, 5);
         }
-//        gc.strokeLine(40, 10, 10, 40);
-//        gc.fillOval(10, 60, 30, 30);
-//        gc.strokeOval(60, 60, 30, 30);
-//        gc.fillRoundRect(110, 60, 30, 30, 10, 10);
-//        gc.strokeRoundRect(160, 60, 30, 30, 10, 10);
-//        gc.fillArc(10, 110, 30, 30, 45, 240, ArcType.OPEN);
-//        gc.fillArc(60, 110, 30, 30, 45, 240, ArcType.CHORD);
-//        gc.strokeArc(10, 160, 30, 30, 45, 240, ArcType.OPEN);
-
     }
 
     @Override
@@ -82,10 +76,19 @@ public class CircleMaker extends Application {
 
     public static ArrayList<double[]> yield_circ(double xc, double yc , double radius) {
         ArrayList<double[]> ret = new ArrayList<double[]>();
-        for (double i = 0; i < 2; i += 0.01) {
+        for (double i = 0.0; i < 2; i += 0.01) {
             double x = xc + (radius * Math.cos(i * Math.PI));
             double y = yc + (radius * Math.sin(i * Math.PI));
-            ret.add(new double[]{x, y});
+            if (i > 0.5 && i < 1.0) {
+                x = (x + 10.0 * Math.abs(1 - 2 * i));
+                ret.add(new double[]{x, y});
+            } else if (i > 1.0 && i < 1.5) {
+                x = (x + 10.0 * Math.abs(1 - i));
+                ret.add(new double[]{x, y});
+            } else {
+                x = (x - 10.0 * Math.abs(1 - i));
+                ret.add(new double[]{x, y});
+            }
         }
         return ret;
     }

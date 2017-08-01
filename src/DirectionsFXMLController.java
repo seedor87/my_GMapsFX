@@ -250,7 +250,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 //                    );
 //                    map.addMapShape(c);
 
-        ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170728_124015.kml");
+        ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170728_172807.kml");
         LatLong[] cAry = new LatLong[from_kml.get(0).size()];
         for (int i = 0; i < from_kml.get(0).size(); i++) {
             cAry[i] = new LatLong(from_kml.get(0).get(i)[1], from_kml.get(0).get(i)[0]); //NOTE, switch lat and long here for proper location
