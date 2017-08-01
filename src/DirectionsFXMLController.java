@@ -45,6 +45,16 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     protected DirectionsRenderer directionsRenderer;
     protected GoogleMap map;
 
+    public LatLong map_center;
+    public ArrayList<LatLong> polygon_coords = new ArrayList<>();
+    public enum drawTypes {
+        NONE, CIRCLE, SQUARE, POLYGON
+    }
+    public drawTypes drawType = drawTypes.NONE;
+
+    @FXML
+    protected ToolBar toolBarTop;
+
     @FXML
     protected GoogleMapView mapView;
 
@@ -64,7 +74,26 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private ComboBox<String> typeCombo;
 
     @FXML
+    private ComboBox<String> drawCombo;
+
+    @FXML
     private TextField showMe;
+
+    public void drawCircle() {
+        drawType = drawTypes.CIRCLE;
+    }
+
+    public void drawSquare() {
+        drawType = drawTypes.SQUARE;
+    }
+
+    public void drawPolygon() {
+        drawType = drawTypes.POLYGON;
+    }
+
+    public void drawNone() {
+        drawType = drawTypes.NONE;
+    }
 
     public void showMe(ActionEvent event) {
         geocodingService.geocode(showMe.getText(), (GeocodingResult[] results, GeocoderStatus status) -> {
@@ -89,8 +118,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 Optional<String> choice = dialog.showAndWait();
                 if (choice.isPresent()) {
                     location = choices.get(choice.get());
-                }
-                else {
+                } else {
                     return;
                 }
             }
@@ -216,6 +244,10 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         return c;
     }
 
+    public void recenterMap(LatLong new_center) {
+        map.setCenter(new_center);
+    }
+
     @Override
     public void mapInitialized() {
         geocodingService = new GeocodingService();
@@ -231,21 +263,26 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         directionsService = new DirectionsService();
         directionsPane = mapView.getDirec();
 
-        geocodingService.geocode("Rowan University, Glassboro NJ", (GeocodingResult[] results, GeocoderStatus status) -> {
-                    double lat, lon;
-                    GeocodingResult location = results[0];
-                    lat = location.getGeometry().getLocation().getLatitude();
-                    lon = location.getGeometry().getLocation().getLongitude();
-                    LatLong rowan = new LatLong(lat, lon);
-                    MarkerOptions markerOptions1 = new MarkerOptions();
-                    markerOptions1.position(rowan);
-                    Marker mark = new Marker(markerOptions1);
-                    map.addMarker(mark);
+//        geocodingService.geocode("Rowan University, Glassboro NJ", (GeocodingResult[] results, GeocoderStatus status) -> {
+//            double lat, lon;
+//            GeocodingResult location = results[0];
+//            lat = location.getGeometry().getLocation().getLatitude();
+//            lon = location.getGeometry().getLocation().getLongitude();
+//            map_center = new LatLong(lat, lon);
+//            recenterMap(map_center);
+//        });
+        map_center = new LatLong(39.70836, -75.11803);
+        recenterMap(map_center);
 
-                    InfoWindowOptions infoWindowOptions = new InfoWindowOptions();
-                    infoWindowOptions.content("<h2>Rowan</h2> Current Location: Robinson Hall<br>");
-                    InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
-                    fredWilkeInfoWindow.open(map, mark);
+        MarkerOptions markerOptions1 = new MarkerOptions();
+        markerOptions1.position(map_center);
+        Marker mark = new Marker(markerOptions1);
+        map.addMarker(mark);
+
+        InfoWindowOptions infoWindowOptions = new InfoWindowOptions();
+        infoWindowOptions.content("<h2>Rowan</h2> Current Location: Robinson Hall<br>");
+        InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
+        fredWilkeInfoWindow.open(map, mark);
 
                     LatLong latlon = new LatLong(lat + 0.001, lon + 0.001);
                     map.setCenter(latlon);
@@ -280,19 +317,22 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 }
             });
 
-            map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
-                @Override
-                public void handle() {
-                    System.out.println(map.getCenter().toString());
-                }
-            });
+        map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
+            @Override
+            public void handle() {
+                System.out.println(map.getCenter().toString());
+            }
+        });
 
-                    LatLong poly1 = new LatLong(lat + .0005, lon - .0005);
-                    LatLong poly2 = new LatLong(lat + .0005, lon + .0005);
-                    LatLong poly3 = new LatLong(lat - .0005, lon + .0005);
-                    LatLong poly4 = new LatLong(lat - .0005, lon - .0005);
-                    LatLong[] pAry = new LatLong[]{poly1, poly2, poly3, poly4};
-                    MVCArray pmvc = new MVCArray(pAry);
+        double lat, lon;
+        lat = map_center.getLatitude();
+        lon = map_center.getLongitude();
+        LatLong poly1 = new LatLong(lat + .0005, lon - .0005);
+        LatLong poly2 = new LatLong(lat + .0005, lon + .0005);
+        LatLong poly3 = new LatLong(lat - .0005, lon + .0005);
+        LatLong poly4 = new LatLong(lat - .0005, lon - .0005);
+        LatLong[] pAry = new LatLong[]{poly1, poly2, poly3, poly4};
+        MVCArray pmvc = new MVCArray(pAry);
 
                     //makes the square polygon - CURRENTLY not being made into a kml file tho... weird
                     PolygonOptions polygOpts = new PolygonOptions()
@@ -329,17 +369,19 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
 
         // Style the showMe text field
-        showMe.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
-                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;");
-        showMe.setStyle(".text-field:focused {\n" +
-                "    -fx-background-color: #a9a9a9 , white , white;\n" +
-                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;\n" +
-                "}");
+//        showMe.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
+//                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;");
+//        showMe.setStyle(".text-field:focused {\n" +
+//                "    -fx-background-color: #a9a9a9 , white , white;\n" +
+//                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;\n" +
+//                "}");
         showMe.setAlignment(Pos.BASELINE_CENTER);
+        toolBarTop.prefWidthProperty().bind(((Stage) toolBarTop.getScene().getWindow()).widthProperty());
 
         // init combo box for map type
         typeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
+            @Override
+            public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
                 MapTypeIdEnum ne = null;
                 if (newType != null) {
                     switch (newType) {
@@ -361,11 +403,89 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
         });
 
-        map.addMouseEventHandler(UIEventType.click, (GMapMouseEvent event) -> {
-            LatLong latLong = event.getLatLong();
-            latitudeText.setText(formatter.format(latLong.getLatitude()));
-            longitudeText.setText(formatter.format(latLong.getLongitude()));
+        drawCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
+                if (newType != null) {
+                    switch (newType) {
+                        case ("Circle"):
+                            drawCircle();
+                            break;
+                        case ("Square"):
+                            drawSquare();
+                            break;
+                        case ("Polygon"):
+                            drawPolygon();
+                            break;
+                        default:
+                            drawNone();
+                            break;
+                    }
+                }
+            }
         });
-    } //end of mapInitialized() method
 
+        map.addMouseEventHandler(UIEventType.click, (GMapMouseEvent event) -> {
+            switch (drawType) {
+                case POLYGON:
+                    polygon_coords.add(event.getLatLong());
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        map.addMouseEventHandler(UIEventType.rightclick, (GMapMouseEvent event) -> {
+            switch (drawType) {
+                case CIRCLE:
+                    Circle circle = new Circle(new CircleOptions()
+                        .center(event.getLatLong())
+                        .radius(50.0)
+                        .fillColor("Red")
+                        .strokeColor("blue")
+                        .strokeWeight(2)
+                        .visible(true)
+                    );
+                    map.addMapShape(circle);
+                    break;
+                case SQUARE:
+                    double clat = event.getLatLong().getLatitude();
+                    double clon = event.getLatLong().getLongitude();
+                    LatLong ne = new LatLong(clat + 0.001, clon - 0.001);
+                    LatLong sw = new LatLong(clat - 0.001, clon + 0.001);
+                    Rectangle rectangle = new Rectangle(new RectangleOptions()
+                            .bounds(new LatLongBounds(ne, sw))
+                            .fillColor("Red")
+                            .strokeColor("blue")
+                            .strokeWeight(2)
+                            .visible(true)
+                    );
+                    map.addMapShape(rectangle);
+                    break;
+                case POLYGON:
+                    if (polygon_coords.size() > 1) {
+                        LatLong[] poly_array = new LatLong[polygon_coords.size()];
+                        for (int i = 0; i < polygon_coords.size(); i++) {
+                            poly_array[i] = new LatLong(polygon_coords.get(i).getLatitude(), polygon_coords.get(i).getLongitude()); //NOTE, switch lat and long here for proper location
+                        }
+                        final MVCArray poly_mvc = new MVCArray(poly_array);
+                        final PolygonOptions poly_opts = new PolygonOptions()
+                                .paths(poly_mvc)
+                                .strokeColor("blue")
+                                .strokeWeight(2)
+                                .editable(false)
+                                .fillColor("red")
+                                .fillOpacity(0.5);
+                        Polygon p = new Polygon(poly_opts);
+                        map.addMapShape(p);
+                    } else {
+                        System.out.println("No More Than 1 point clicked");
+                    }
+                    polygon_coords = new ArrayList<LatLong>();
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
 }
