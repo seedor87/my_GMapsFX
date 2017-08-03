@@ -7,6 +7,7 @@ import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.directions.*;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -30,13 +31,14 @@ import javafx.scene.control.*;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
     private GeocodingService geocodingService;
     private DirectionsService directionsService;
     private DirectionsPane directionsPane;
-    private DecimalFormat formatter = new DecimalFormat("###.00000");
+    private DecimalFormat formatter = new DecimalFormat("###.0000000");
 
     protected KMLBuilder kmlBuilder = new KMLBuilder();
 
@@ -223,25 +225,38 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
      * @param map
      * @return Polygon c
      */
-    private Polygon makeArray4Shape(String filePath, GoogleMap map){
+    private void makeArray4Shape(String filePath, GoogleMap map){
         ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists(filePath);
-        LatLong[] cAry = new LatLong[from_kml.get(0).size()];
-        for (int i = 0; i < from_kml.get(0).size(); i ++) {
-            cAry[i] = new LatLong(from_kml.get(0).get(i)[1], from_kml.get(0).get(i)[0]); //NOTE, switch lat and long here for proper location
+        for (int i = 0; i < from_kml.size(); i++) {
+            ArrayList<double[]> current_polygon = from_kml.get(i);
+            LatLong[] array = new LatLong[current_polygon.size()];
+            for (int j = 0; j < current_polygon.size(); j++) {
+                array[j] = new LatLong(current_polygon.get(j)[1], current_polygon.get(j)[0]); //NOTE, switch lat and long here for proper location
+            }
+            MVCArray pmvc = new MVCArray(array);
+            PolygonOptions polyOpts = new PolygonOptions()
+                    .paths(pmvc)
+                    .strokeColor("blue")
+                    .strokeWeight(2)
+                    .editable(false)
+                    .fillColor("red")
+                    .fillOpacity(0.5);
+            Polygon poly = new Polygon(polyOpts);
+            map.addMapShape(poly);
+
+            map.addUIEventHandler(poly, UIEventType.click, new UIEventHandler() {
+                @Override
+                public void handle(JSObject obj) {
+                    try {
+                        String poly = kmlBuilder.polygon(Arrays.asList(array), new ArrayList<LatLong>(), "Test for Circle");
+                        kmlBuilder.appendTo(poly);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
         }
 
-        MVCArray cmvc = new MVCArray(cAry);
-        PolygonOptions circleOpts = new PolygonOptions()
-                .paths(cmvc)
-                .strokeColor("blue")
-                .strokeWeight(2)
-                .editable(false)
-                .fillColor("red")
-                .fillOpacity(0.5);
-        Polygon c = new Polygon(circleOpts);
-        map.addMapShape(c);
-
-        return c;
     }
 
     public void recenterMap(LatLong new_center) {
@@ -255,13 +270,22 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
         // init underlay map
         options.zoomControl(true)
-                .zoom(18)
+                .zoom(16)
                 .overviewMapControl(false)
                 .mapType(MapTypeIdEnum.SATELLITE)
                 .streetViewControl(true);
         map = mapView.createMap(options);
         directionsService = new DirectionsService();
         directionsPane = mapView.getDirec();
+
+        map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
+            @Override
+            public void handle() {
+                System.out.println(map.getCenter().toString());
+                latitudeText.setText(formatter.format(map.getCenter().getLatitude()));
+                longitudeText.setText(formatter.format(map.getCenter().getLongitude()));
+            }
+        });
 
 //        geocodingService.geocode("Rowan University, Glassboro NJ", (GeocodingResult[] results, GeocoderStatus status) -> {
 //            double lat, lon;
@@ -284,80 +308,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
         fredWilkeInfoWindow.open(map, mark);
 
-                    LatLong latlon = new LatLong(lat + 0.001, lon + 0.001);
-                    map.setCenter(latlon);
-
-//                    Circle c = new Circle(new CircleOptions()
-//                            .center(latlon)
-//                            .radius(50.0)
-//                            .fillColor("Red")
-//                            .strokeColor("blue")
-//                            .strokeWeight(2)
-//                            .visible(true)
-//                    );
-//                    map.addMapShape(c);
-
-            Polygon c = makeArray4Shape("C:\\Users\\Brooke\\IdeaProjects\\my_GMapsFX\\20170727_133342.kml", map);
-
-            ArrayList<double[]> circle_points = CircleMaker.yield_circ(latlon.getLatitude(), latlon.getLongitude(), 0.001);
-            ArrayList<LatLong> circle_latlons = new ArrayList<LatLong>();
-            for (double[] pair : circle_points) {
-                circle_latlons.add(new LatLong(pair[0], pair[1]));
-            }
-
-            map.addUIEventHandler(c, UIEventType.click, new UIEventHandler() {
-                @Override
-                public void handle(JSObject obj) {
-                    try {
-                        String poly = kmlBuilder.polygon(circle_latlons, new ArrayList<LatLong>(), "Test for Circle");
-                        kmlBuilder.appendTo(poly);
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-
-        map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
-            @Override
-            public void handle() {
-                System.out.println(map.getCenter().toString());
-            }
-        });
-
-        double lat, lon;
-        lat = map_center.getLatitude();
-        lon = map_center.getLongitude();
-        LatLong poly1 = new LatLong(lat + .0005, lon - .0005);
-        LatLong poly2 = new LatLong(lat + .0005, lon + .0005);
-        LatLong poly3 = new LatLong(lat - .0005, lon + .0005);
-        LatLong poly4 = new LatLong(lat - .0005, lon - .0005);
-        LatLong[] pAry = new LatLong[]{poly1, poly2, poly3, poly4};
-        MVCArray pmvc = new MVCArray(pAry);
-
-                    //makes the square polygon - CURRENTLY not being made into a kml file tho... weird
-                    PolygonOptions polygOpts = new PolygonOptions()
-                            .paths(pmvc)
-                            .strokeColor("red")
-                            .strokeWeight(2)
-                            .editable(false)
-                            .fillColor("Blue")
-                            .fillOpacity(0.5);
-                    Polygon pg = new Polygon(polygOpts);
-                    map.addMapShape(pg);
-
-                    map.addUIEventHandler(pg, UIEventType.click, new UIEventHandler() {
-                        @Override
-                        public void handle(JSObject obj) {
-                            try {
-                                String poly = kmlBuilder.polygon(Arrays.asList(pAry), new ArrayList<LatLong>(), "Test for Square");
-                                kmlBuilder.appendTo(poly);
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
-                            }
-                        }
-                    });
-                });
-
+        makeArray4Shape("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170803_190300.kml", map);
 
 
         //New code from Brooke: grabs the primaryStage field from the DirectionsApiMainApp and handles the
@@ -446,8 +397,30 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         .strokeWeight(2)
                         .visible(true)
                     );
+
+                    double radius = 0.0005;
+                    double xrad = 0.88 * radius;
+                    double yrad = 1.12 * radius;
+                    final ArrayList<double[]> c_ps = CircleMaker.yield_ellipse(event.getLatLong().getLatitude(), event.getLatLong().getLongitude(), xrad, yrad);
+                    final ArrayList<LatLong> c_ll = new ArrayList<LatLong>();
+                    for (double[] pair : c_ps) {
+                        c_ll.add(new LatLong(pair[0], pair[1]));
+                    }
+
+                    map.addUIEventHandler(circle, UIEventType.click, new UIEventHandler() {
+                        @Override
+                        public void handle(JSObject obj) {
+                            try {
+                                String poly = kmlBuilder.polygon(c_ll, new ArrayList<LatLong>(), "Test for Circle");
+                                kmlBuilder.appendTo(poly);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    });
                     map.addMapShape(circle);
                     break;
+
                 case SQUARE:
                     double clat = event.getLatLong().getLatitude();
                     double clon = event.getLatLong().getLongitude();
@@ -460,8 +433,26 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                             .strokeWeight(2)
                             .visible(true)
                     );
+                    ArrayList<LatLong> s_ll = new ArrayList<LatLong>();
+                    s_ll.add(new LatLong(clat + 0.001, clon - 0.001));
+                    s_ll.add(new LatLong(clat + 0.001, clon + 0.001));
+                    s_ll.add(new LatLong(clat - 0.001, clon + 0.001));
+                    s_ll.add(new LatLong(clat - 0.001, clon - 0.001));
+
+                    map.addUIEventHandler(rectangle, UIEventType.click, new UIEventHandler() {
+                        @Override
+                        public void handle(JSObject obj) {
+                            try {
+                                String poly = kmlBuilder.polygon(s_ll, new ArrayList<LatLong>(), "Test for Square");
+                                kmlBuilder.appendTo(poly);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    });
                     map.addMapShape(rectangle);
                     break;
+
                 case POLYGON:
                     if (polygon_coords.size() > 1) {
                         LatLong[] poly_array = new LatLong[polygon_coords.size()];
@@ -478,11 +469,25 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                                 .fillOpacity(0.5);
                         Polygon p = new Polygon(poly_opts);
                         map.addMapShape(p);
+
+                        map.addUIEventHandler(p, UIEventType.click, new UIEventHandler() {
+                            @Override
+                            public void handle(JSObject obj) {
+                                try {
+                                    String poly = kmlBuilder.polygon(Arrays.asList(poly_array), new ArrayList<LatLong>(), "Test for Circle");
+                                    kmlBuilder.appendTo(poly);
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        });
                     } else {
                         System.out.println("No More Than 1 point clicked");
                     }
+
                     polygon_coords = new ArrayList<LatLong>();
                     break;
+
                 default:
                     break;
             }

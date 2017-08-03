@@ -21,9 +21,12 @@ public class CircleMaker extends Application {
 
     public static void main(String[] args) {
 
-        result = yield_circ(xc, yc, 50.0);
+        double radius = 50;
+        double xrad = 0.88 * radius;
+        double yrad = 1.12 * radius;
+        result = yield_ellipse(xc, yc, xrad, yrad);
         for (double[] pair : result) {
-//            System.out.println(pair[0] + ", " + pair[1]);
+            System.out.println(pair[0] + ", " + pair[1]);
         }
 
         launch(args);
@@ -79,16 +82,18 @@ public class CircleMaker extends Application {
         for (double i = 0.0; i < 2; i += 0.01) {
             double x = xc + (radius * Math.cos(i * Math.PI));
             double y = yc + (radius * Math.sin(i * Math.PI));
-            if (i > 0.5 && i < 1.0) {
-                x = (x + 10.0 * Math.abs(1 - 2 * i));
-                ret.add(new double[]{x, y});
-            } else if (i > 1.0 && i < 1.5) {
-                x = (x + 10.0 * Math.abs(1 - i));
-                ret.add(new double[]{x, y});
-            } else {
-                x = (x - 10.0 * Math.abs(1 - i));
-                ret.add(new double[]{x, y});
-            }
+            ret.add(new double[]{x, y});
+        }
+        return ret;
+    }
+
+    public static ArrayList<double[]> yield_ellipse(double xc, double yc , double xrad, double yrad) {
+        ArrayList<double[]> ret = new ArrayList<double[]>();
+        for (double i = 0.0; i < 2; i += 0.01) {
+            double x = xc + (xrad * Math.cos(i * Math.PI));
+            double y = yc + (yrad * Math.sin(i * Math.PI));
+
+            ret.add(new double[]{x, y});
         }
         return ret;
     }

@@ -9,12 +9,10 @@
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
 <?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.text.Font?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.MenuButton?>
-<?import javafx.scene.control.MenuItem?>
+
 <AnchorPane id="AnchorPane" prefHeight="900.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="DirectionsFXMLController">
 
    <children>
@@ -43,8 +41,8 @@
 
             <HBox alignment="CENTER_RIGHT">
                <VBox>
-                  <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="75.0" promptText="lat:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
-                  <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="75.0" promptText="long:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="50.0" />
+                  <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="90.0" promptText="lat:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
+                  <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="90.0" promptText="long:" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="50.0" />
                </VBox>
                <Button fx:id="revGeocode" prefHeight="25" prefWidth="75" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="90.0" mnemonicParsing="false" onAction="#revGeocode" text="find" />
 
