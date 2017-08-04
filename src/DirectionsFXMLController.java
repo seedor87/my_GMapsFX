@@ -1,13 +1,11 @@
 
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
-import com.lynden.gmapsfx.javascript.JavascriptObject;
 import com.lynden.gmapsfx.javascript.event.*;
 import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.directions.*;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -19,6 +17,7 @@ import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
 import com.lynden.gmapsfx.service.geocoding.GeocodingService;
 import com.lynden.gmapsfx.shapes.*;
 import com.lynden.gmapsfx.shapes.Polygon;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
@@ -29,60 +28,62 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.TextField;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
     private GeocodingService geocodingService;
     private DirectionsService directionsService;
     private DirectionsPane directionsPane;
+    private DirectionsRenderer directionsRenderer;
+    private GoogleMap map;
+    public LatLong mapCenter;
+
     private DecimalFormat formatter = new DecimalFormat("###.0000000");
+    private KMLBuilder kmlBuilder = new KMLBuilder();
 
-    protected KMLBuilder kmlBuilder = new KMLBuilder();
-
-    protected StringProperty from = new SimpleStringProperty();
-    protected StringProperty to = new SimpleStringProperty();
-    protected DirectionsRenderer directionsRenderer;
-    protected GoogleMap map;
-
-    public LatLong map_center;
+    private StringProperty fromText = new SimpleStringProperty();
+    private StringProperty toText = new SimpleStringProperty();
     public ArrayList<LatLong> polygon_coords = new ArrayList<>();
+
     public enum drawTypes {
         NONE, CIRCLE, SQUARE, POLYGON
     }
-    public drawTypes drawType = drawTypes.NONE;
+    public drawTypes selctedDrawType = drawTypes.NONE;
+
+    private static int numPins = 0;
+
 
     @FXML
-    protected ToolBar toolBarTop;
-
+    protected GoogleMapView mapView;    //Map View used to render all of map
     @FXML
-    protected GoogleMapView mapView;
+    protected Label crossHairs; //The centered focal point to denote the center of the screen
+    @FXML
+    protected ToolBar toolBarTop;   //The toolbar of functions to use to augment usefulness
 
     @FXML
     protected TextField fromTextField;
-
     @FXML
     protected TextField toTextField;
-
+    @FXML
+    private TextField findByAddressTextField;
     @FXML
     private TextField latitudeText;
-
     @FXML
     private TextField longitudeText;
-
     @FXML
-    private ComboBox<String> typeCombo;
-
+    private ComboBox<String> mapTypeCombo;
     @FXML
-    private ComboBox<String> drawCombo;
+    private ComboBox<String> drawTypeCombo;
 
-    @FXML
-    private TextField showMe;
+    public void findByAddress(ActionEvent event) {
+        findByAddress(findByAddressTextField.getText());
+    }
 
-    public void showMe(ActionEvent event) {
-        geocodingService.geocode(showMe.getText(), (GeocodingResult[] results, GeocoderStatus status) -> {
+    public void findByAddress(String givenAddress) {
+        geocodingService.geocode(givenAddress, (GeocodingResult[] results, GeocoderStatus status) -> {
             GeocodingResult location = results[0];
             double lat, lon;
 
@@ -100,7 +101,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 dialog.setHeaderText("More Than One ADress Found...");
                 dialog.setContentText("Choose the Address you were looking for");
 
-                // Traditional way to get the response value.
+                // Traditional way toText get the response value.
                 Optional<String> choice = dialog.showAndWait();
                 if (choice.isPresent()) {
                     location = choices.get(choice.get());
@@ -117,31 +118,54 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             map.setCenter(latlon);
             map.setZoom(18);
             map.setMapType(MapTypeIdEnum.SATELLITE);
+
+//            Used to show alert about info at point
+//            Platform.runLater( () -> {
+//                revGeocode(new ActionEvent());
+//            });
         });
     }
 
     @FXML
     public void revGeocode(ActionEvent event) {
+        double lat = Double.parseDouble(latitudeText.getText());
+        double lon = Double.parseDouble(longitudeText.getText());
+        revGeocode(lat, lon);
+    }
+
+    public void revGeocode(double lat, double lon) {
         try {
-            double lat = Double.parseDouble(latitudeText.getText());
-            double lon = Double.parseDouble(longitudeText.getText());
             geocodingService.reverseGeocode(lat, lon, (GeocodingResult[] results, GeocoderStatus status) -> {
-                GeocodingResult location = results[0];
+                GeocodingResult location = results[0];  // Grab just first result in case ther are no more
                 List<GeocoderAddressComponent> addressComponents = location.getAddressComponents();
                 StringBuilder post = new StringBuilder();
                 for (GeocoderAddressComponent partial : addressComponents) {
                     post.append(partial.getShortName() + " ");
                 }
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, post.toString());
-                alert.show();
+                MarkerOptions markerOptions1 = new MarkerOptions();
+                markerOptions1.position(new LatLong(lat, lon));
+                Marker mark = new Marker(markerOptions1);
+                map.addMarker(mark);
+
+                String infoString = "<h4>Post Num: " + ++numPins + "</h4>" + post.toString();
+
+                InfoWindowOptions infoWindowOptions = new InfoWindowOptions();
+                infoWindowOptions.content(infoString);
+                InfoWindow infoWindow = new InfoWindow(infoWindowOptions);
+                infoWindow.open(map, mark);
             });
             recenterMap(new LatLong(lat, lon));
-            setMapZoom(18);
+            setMapZoom(20);
         } catch (Exception ex) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid Lat and Long");
             alert.show();
         }
+    }
+
+    @FXML
+    private void fromTextFieldAction(ActionEvent event) {
+        enterDirections(event);
     }
 
     @FXML
@@ -151,7 +175,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     @FXML
     private void enterDirections(ActionEvent event) {
-        DirectionsRequest request = new DirectionsRequest(from.get(), to.get(), TravelModes.DRIVING);
+        DirectionsRequest request = new DirectionsRequest(fromText.get(), toText.get(), TravelModes.DRIVING);
         directionsRenderer = new DirectionsRenderer(true, mapView.getMap(), directionsPane);
         directionsService.getRoute(request, this, directionsRenderer);
     }
@@ -169,7 +193,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private void debugAction(ActionEvent event) {
         toTextField.setText("121 Whittendale Dr. Moorestown NJ");
         fromTextField.setText("201 Mullica Hill Rd. Glassboro NJ");
-        showMe.setText("1600 Pennsylvania Ave. NW");
+        findByAddressTextField.setText("1600 Pennsylvania Ave. NW");
 
 //        map.setMapType(MapTypeIdEnum.ROADMAP);
 //        map.setZoom(12);
@@ -185,17 +209,17 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         mapView.addMapInializedListener(this);
-        to.bindBidirectional(toTextField.textProperty());
-        from.bindBidirectional(fromTextField.textProperty());
+        toText.bindBidirectional(toTextField.textProperty());
+        fromText.bindBidirectional(fromTextField.textProperty());
     }
 
 
     /**
      * Is called later in code, when the application is closed.
-     * Uses kmlBuilder field to create the KML file.
+     * Uses kmlBuilder field toText create the KML file.
      */
     public void closeFile() {
-        // After the polygons are all added, do createFile to finish.
+        // After the polygons are all added, do createFile toText finish.
         try {
             kmlBuilder.createFile();
         }
@@ -205,7 +229,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     }
 
     /**
-     * Literally just copied and pasted from earlier
+     * Literally just copied and pasted fromText earlier
      *
      * @param filePath
      * @param map
@@ -284,46 +308,40 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             public void handle() {
                 latitudeText.setText(formatter.format(map.getCenter().getLatitude()));
                 longitudeText.setText(formatter.format(map.getCenter().getLongitude()));
+                crossHairs.setLayoutX(crossHairs.getScene().getWindow().getWidth() / 2 - crossHairs.getWidth());
+                crossHairs.setLayoutY(crossHairs.getScene().getWindow().getHeight() / 2 - crossHairs.getHeight()+1);
             }
         });
 
-        map_center = new LatLong(39.70836, -75.11803);
-        recenterMap(map_center);
+        mapCenter = new LatLong(39.70836, -75.11803);
+        recenterMap(mapCenter);
 
-        MarkerOptions markerOptions1 = new MarkerOptions();
-        markerOptions1.position(map_center);
-        Marker mark = new Marker(markerOptions1);
-        map.addMarker(mark);
-
-        InfoWindowOptions infoWindowOptions = new InfoWindowOptions();
-        infoWindowOptions.content("<h2>Rowan</h2> Current Location: Robinson Hall<br>");
-        InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
-        fredWilkeInfoWindow.open(map, mark);
-
-        makeArray4Shape("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170803_183338.kml", map);
+        // This static method loads, illustrates, and add listeners to the polygons upon load
+        makeArray4Shape(".\\kml\\20170803_183338.kml", map);
 
 
-        //New code from Brooke: grabs the primaryStage field from the DirectionsApiMainApp and handles the
-        //event "exit the application" field to carry out the closeField method
+        //New code fromText Brooke: grabs the primaryStage field fromText the DirectionsApiMainApp and handles the
+        //event "exit the application" field toText carry out the closeField method
         Stage s = DirectionsApiMainApp.getPrimaryStage();
         s.setOnCloseRequest(event -> {
             closeFile();
         });
 
 
-        // Style the showMe text field
-//        showMe.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
+        // Style the findByAddressTextField text field
+//        findByAddressTextField.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
 //                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;");
-//        showMe.setStyle(".text-field:focused {\n" +
+//        findByAddressTextField.setStyle(".text-field:focused {\n" +
 //                "    -fx-background-color: #a9a9a9 , white , white;\n" +
 //                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;\n" +
 //                "}");
-        showMe.setAlignment(Pos.BASELINE_CENTER);
+        findByAddressTextField.setAlignment(Pos.BASELINE_CENTER);
         toolBarTop.prefWidthProperty().bind((toolBarTop.getScene().getWindow()).widthProperty());
-
+        crossHairs.setStyle("-fx-font-size: 21;");
+        crossHairs.setTextFill(Color.RED);
 
         // init combo box for map type
-        typeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+        mapTypeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
                 MapTypeIdEnum ne = null;
@@ -347,22 +365,22 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
         });
 
-        drawCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+        drawTypeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
                 if (newType != null) {
                     switch (newType) {
                         case ("Circle"):
-                            drawType = drawTypes.CIRCLE;
+                            selctedDrawType = drawTypes.CIRCLE;
                             break;
                         case ("Square"):
-                            drawType = drawTypes.SQUARE;
+                            selctedDrawType = drawTypes.SQUARE;
                             break;
                         case ("Polygon"):
-                            drawType = drawTypes.POLYGON;
+                            selctedDrawType = drawTypes.POLYGON;
                             break;
                         default:
-                            drawType = drawTypes.NONE;
+                            selctedDrawType = drawTypes.NONE;
                             break;
                     }
                 }
@@ -370,7 +388,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         });
 
         map.addMouseEventHandler(UIEventType.click, (GMapMouseEvent event) -> {
-            switch (drawType) {
+            switch (selctedDrawType) {
                 case POLYGON:
                     polygon_coords.add(event.getLatLong());
                     break;
@@ -380,7 +398,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         });
 
         map.addMouseEventHandler(UIEventType.rightclick, (GMapMouseEvent event) -> {
-            switch (drawType) {
+            switch (selctedDrawType) {
                 case CIRCLE:
                     Circle circle = new Circle(new CircleOptions()
                         .center(event.getLatLong())
@@ -391,7 +409,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         .visible(true)
                     );
 
-                    // Used to ellipse-ify the circle to match perspective on zoom an dun-zoom
+                    // Used toText ellipse-ify the circle toText match perspective on zoom an dun-zoom
                     double radius = 0.0005;
                     double xrad = 0.88 * radius;
                     double yrad = 1.12 * radius;
