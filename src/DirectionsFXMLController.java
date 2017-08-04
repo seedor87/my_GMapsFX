@@ -81,22 +81,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     @FXML
     private TextField showMe;
 
-    public void drawCircle() {
-        drawType = drawTypes.CIRCLE;
-    }
-
-    public void drawSquare() {
-        drawType = drawTypes.SQUARE;
-    }
-
-    public void drawPolygon() {
-        drawType = drawTypes.POLYGON;
-    }
-
-    public void drawNone() {
-        drawType = drawTypes.NONE;
-    }
-
     public void showMe(ActionEvent event) {
         geocodingService.geocode(showMe.getText(), (GeocodingResult[] results, GeocoderStatus status) -> {
             GeocodingResult location = results[0];
@@ -152,6 +136,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, post.toString());
                 alert.show();
             });
+            recenterMap(new LatLong(lat, lon));
+            setMapZoom(18);
         } catch (Exception ex) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid Lat and Long");
             alert.show();
@@ -259,8 +245,23 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     }
 
+    public void recenterMap(double lat, double lon) {
+        recenterMap(new LatLong(lat, lon));
+    }
+
     public void recenterMap(LatLong new_center) {
         map.setCenter(new_center);
+    }
+
+    public void setMapZoom(int val) {
+        String on_error;
+        if (val < 0 || val > 20) {
+            on_error = "Invalid zoom, must be between 0 and 20";
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, on_error);
+            alert.show();
+            return;
+        }
+        map.setZoom(val);
     }
 
     @Override
@@ -281,20 +282,11 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
             @Override
             public void handle() {
-                System.out.println(map.getCenter().toString());
                 latitudeText.setText(formatter.format(map.getCenter().getLatitude()));
                 longitudeText.setText(formatter.format(map.getCenter().getLongitude()));
             }
         });
 
-//        geocodingService.geocode("Rowan University, Glassboro NJ", (GeocodingResult[] results, GeocoderStatus status) -> {
-//            double lat, lon;
-//            GeocodingResult location = results[0];
-//            lat = location.getGeometry().getLocation().getLatitude();
-//            lon = location.getGeometry().getLocation().getLongitude();
-//            map_center = new LatLong(lat, lon);
-//            recenterMap(map_center);
-//        });
         map_center = new LatLong(39.70836, -75.11803);
         recenterMap(map_center);
 
@@ -308,7 +300,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         InfoWindow fredWilkeInfoWindow = new InfoWindow(infoWindowOptions);
         fredWilkeInfoWindow.open(map, mark);
 
-        makeArray4Shape("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170803_190300.kml", map);
+        makeArray4Shape("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\20170803_183338.kml", map);
 
 
         //New code from Brooke: grabs the primaryStage field from the DirectionsApiMainApp and handles the
@@ -327,7 +319,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 //                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;\n" +
 //                "}");
         showMe.setAlignment(Pos.BASELINE_CENTER);
-        toolBarTop.prefWidthProperty().bind(((Stage) toolBarTop.getScene().getWindow()).widthProperty());
+        toolBarTop.prefWidthProperty().bind((toolBarTop.getScene().getWindow()).widthProperty());
+
 
         // init combo box for map type
         typeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
@@ -360,16 +353,16 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 if (newType != null) {
                     switch (newType) {
                         case ("Circle"):
-                            drawCircle();
+                            drawType = drawTypes.CIRCLE;
                             break;
                         case ("Square"):
-                            drawSquare();
+                            drawType = drawTypes.SQUARE;
                             break;
                         case ("Polygon"):
-                            drawPolygon();
+                            drawType = drawTypes.POLYGON;
                             break;
                         default:
-                            drawNone();
+                            drawType = drawTypes.NONE;
                             break;
                     }
                 }
@@ -398,6 +391,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         .visible(true)
                     );
 
+                    // Used to ellipse-ify the circle to match perspective on zoom an dun-zoom
                     double radius = 0.0005;
                     double xrad = 0.88 * radius;
                     double yrad = 1.12 * radius;
@@ -465,8 +459,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                                 .strokeColor("blue")
                                 .strokeWeight(2)
                                 .editable(false)
-                                .fillColor("red")
-                                .fillOpacity(0.5);
+                                .fillColor("red");
                         Polygon p = new Polygon(poly_opts);
                         map.addMapShape(p);
 
