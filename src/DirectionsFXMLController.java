@@ -1,28 +1,35 @@
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonStreamParser;
+
+import netscape.javascript.JSObject;
+
+import java.io.*;
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.List;
+
 import com.lynden.gmapsfx.GoogleMapView;
 import com.lynden.gmapsfx.MapComponentInitializedListener;
 import com.lynden.gmapsfx.javascript.event.*;
 import com.lynden.gmapsfx.javascript.object.*;
 import com.lynden.gmapsfx.service.directions.*;
-
-import java.io.IOException;
-import java.net.URL;
-import java.text.DecimalFormat;
-import java.util.*;
-import java.util.List;
-
 import com.lynden.gmapsfx.service.geocoding.GeocoderAddressComponent;
 import com.lynden.gmapsfx.service.geocoding.GeocoderStatus;
 import com.lynden.gmapsfx.service.geocoding.GeocodingResult;
 import com.lynden.gmapsfx.service.geocoding.GeocodingService;
 import com.lynden.gmapsfx.shapes.*;
 import com.lynden.gmapsfx.shapes.Polygon;
-import javafx.application.Platform;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
+import javafx.event.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -30,7 +37,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import netscape.javascript.JSObject;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
@@ -43,6 +49,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     private DecimalFormat formatter = new DecimalFormat("###.0000000");
     private KMLBuilder kmlBuilder = new KMLBuilder();
+    private BufferedWriter bw;
 
     private StringProperty fromText = new SimpleStringProperty();
     private StringProperty toText = new SimpleStringProperty();
@@ -80,6 +87,9 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     public void findByAddress(ActionEvent event) {
         findByAddress(findByAddressTextField.getText());
+//        InteractionWrapper test = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
+//        Gson gson = new Gson();
+//        gson.toJson(test, bw);
     }
 
     public void findByAddress(String givenAddress) {
@@ -98,7 +108,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 }
                 ChoiceDialog<String> dialog = new ChoiceDialog<>("Choose an address.", choices.keySet());
                 dialog.setTitle("Address Choice Dialog");
-                dialog.setHeaderText("More Than One ADress Found...");
+                dialog.setHeaderText("More Than One Address Found...");
                 dialog.setContentText("Choose the Address you were looking for");
 
                 // Traditional way toText get the response value.
@@ -191,13 +201,51 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     @FXML
     private void debugAction(ActionEvent event) {
-        toTextField.setText("121 Whittendale Dr. Moorestown NJ");
-        fromTextField.setText("201 Mullica Hill Rd. Glassboro NJ");
-        findByAddressTextField.setText("1600 Pennsylvania Ave. NW");
 
-//        map.setMapType(MapTypeIdEnum.ROADMAP);
-//        map.setZoom(12);
-//        enterDirections(event);
+//        Gson gson = new Gson();
+//        Type type = new TypeToken<Map<String, String>>(){}.getType();
+//        Map<String, String> myMap = gson.fromJson(test.toString(), type);
+//        switch(InteractionWrapper.Type.valueOf(myMap.get("type"))) {
+//            case ADDRESS_BAR :
+//                System.out.println("doing it");
+//        }
+
+        try {
+            InputStream is = new FileInputStream(new File("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170813_134329.json"));
+            Reader r = new InputStreamReader(is, "UTF-8");
+            Gson gson = new GsonBuilder().create();
+            JsonStreamParser p = new JsonStreamParser(r);
+            while (p.hasNext()) {
+                JsonElement e;
+                try {
+                    e = p.next();
+                } catch (Exception ex) {
+                    /* break case for malformed json exception */
+                    break;
+                }
+                if (e.isJsonObject()) {
+                    gson.fromJson(e, Map.class);
+                    InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
+                    EventTarget target;
+                    switch(test.getType()) {
+                        case ADDRESS_BAR:
+                            target = new MyEventTarget(test.getText(), findByAddressTextField);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                            break;
+                        case CENTER_MOVED:
+                            target = new NewEventTarget(test.getLat(), test.getLon(), map);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                            break;
+                        default:
+                            System.err.println("invalid wrapper type");
+                    }
+                }
+            }
+        }
+        catch (Exception exc) {
+            exc.printStackTrace();
+        }
+
     }
 
     @Override
@@ -293,6 +341,15 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         geocodingService = new GeocodingService();
         MapOptions options = new MapOptions();
 
+        try {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+            String fileName =  timeStamp + ".json";
+            fileName = "kml" + "\\" + fileName;
+            bw = new BufferedWriter( new FileWriter(fileName));
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
+
         // init underlay map
         options.zoomControl(true)
                 .zoom(16)
@@ -306,10 +363,15 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         map.addStateEventHandler(MapStateEventType.center_changed, new StateEventHandler() {
             @Override
             public void handle() {
-                latitudeText.setText(formatter.format(map.getCenter().getLatitude()));
-                longitudeText.setText(formatter.format(map.getCenter().getLongitude()));
+                double lat = map.getCenter().getLatitude();
+                double lon = map.getCenter().getLongitude();
+                latitudeText.setText(formatter.format(lat));
+                longitudeText.setText(formatter.format(lon));
                 crossHairs.setLayoutX(crossHairs.getScene().getWindow().getWidth() / 2 - crossHairs.getWidth());
                 crossHairs.setLayoutY(crossHairs.getScene().getWindow().getHeight() / 2 - crossHairs.getHeight()+1);
+                InteractionWrapper test = new InteractionWrapper(lat, lon, map);
+                Gson gson = new Gson();
+                gson.toJson(test, bw);
             }
         });
 
@@ -324,6 +386,11 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         //event "exit the application" field toText carry out the closeField method
         Stage s = DirectionsApiMainApp.getPrimaryStage();
         s.setOnCloseRequest(event -> {
+            try {
+                bw.close();
+            } catch(IOException ex) {
+                ex.printStackTrace();
+            }
             closeFile();
         });
 

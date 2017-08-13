@@ -87,6 +87,11 @@
                      </items>
                   </ComboBox>
                </VBox>
+               <Label>Choose Drawing</Label>
+                  <Button mnemonicParsing="false" onAction="#debugAction" text="debug" />
+               <VBox>
+
+               </VBox>
             </HBox>
 
          </items>
