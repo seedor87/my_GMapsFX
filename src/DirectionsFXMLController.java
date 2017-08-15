@@ -87,9 +87,9 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     public void findByAddress(ActionEvent event) {
         findByAddress(findByAddressTextField.getText());
-//        InteractionWrapper test = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
-//        Gson gson = new Gson();
-//        gson.toJson(test, bw);
+        InteractionWrapper test = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
+        Gson gson = new Gson();
+        gson.toJson(test, bw);
     }
 
     public void findByAddress(String givenAddress) {
@@ -211,7 +211,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 //        }
 
         try {
-            InputStream is = new FileInputStream(new File("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170813_134329.json"));
+            InputStream is = new FileInputStream(new File("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170815_182137.json"));
             Reader r = new InputStreamReader(is, "UTF-8");
             Gson gson = new GsonBuilder().create();
             JsonStreamParser p = new JsonStreamParser(r);
