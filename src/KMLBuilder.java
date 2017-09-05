@@ -17,6 +17,7 @@ import java.util.*;
  */
 public class KMLBuilder {
 
+    String kmlDir = ".\\kml";
     String fileName = ""; //file name
     String description = ""; //file description
     StringBuffer stringBuffer;
@@ -207,8 +208,8 @@ public class KMLBuilder {
      */
     public String getFileName() {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-        timeStamp += ".kml";
-        return timeStamp;
+        String fileName =  timeStamp + ".kml";
+        return kmlDir + "\\" + fileName;
     }
 
 
