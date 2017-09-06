@@ -317,6 +317,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     }
 
+    public void open() {}
+
     public void recenterMap(double lat, double lon) {
         recenterMap(new LatLong(lat, lon));
     }
