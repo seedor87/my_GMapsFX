@@ -1,60 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.lynden.gmapsfx.GoogleMapView?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
-
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Separator?>
-<AnchorPane id="AnchorPane" prefHeight="900.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="DirectionsFXMLController">
+<AnchorPane id="AnchorPane" prefHeight="900.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="DirectionsFXMLController">
 
    <children>
-      <GoogleMapView fx:id="mapView" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+      <GoogleMapView fx:id="mapView" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <children>
+            <MenuBar minWidth="-Infinity">
+              <menus>
+                <Menu mnemonicParsing="false" text="Save">
+                  <items>
+                     <MenuItem mnemonicParsing="false" text="Save File" onAction="#closeFile"/>
+                     <MenuItem mnemonicParsing="false" text="Save As" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Open">
+                 <items>
+                    <MenuItem mnemonicParsing="false" text="Open File" onAction="#open" />
+                    <MenuItem mnemonicParsing="false" text="Open Debug" onAction="#debugAction" />
+                 </items>
+                </Menu>
+              </menus>
+            </MenuBar>
+         </children></GoogleMapView>
 
       <Label fx:id="crossHairs">^</Label>
 
-      <ToolBar HBox.hgrow="ALWAYS" fx:id = "toolBarTop" style="-fx-alignment: CENTER" prefHeight="60.0" styleClass="spacer" AnchorPane.rightAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="10.0">
+      <ToolBar fx:id="toolBarTop" layoutX="276.0" prefHeight="0.0" prefWidth="914.0" style="-fx-alignment: CENTER" styleClass="spacer" AnchorPane.leftAnchor="276.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" HBox.hgrow="ALWAYS">
          <items>
-            <HBox alignment="CENTER_LEFT">
+            <HBox alignment="CENTER">
                <VBox>
                   <Label>Directions</Label>
                   <HBox>
-                     <TextField fx:id="fromTextField" prefHeight="27.0" prefWidth="150.0" onAction="#fromTextFieldAction" promptText="From:"/>
+                     <TextField fx:id="fromTextField" onAction="#fromTextFieldAction" prefHeight="27.0" prefWidth="150.0" promptText="From:" />
                      <Button mnemonicParsing="false" onAction="#enterDirections" text="GO" />
                   </HBox>
                   <HBox>
-                     <TextField fx:id="toTextField" layoutX="10.0" layoutY="10.0" onAction="#toTextFieldAction" prefHeight="27.0" prefWidth="150.0" promptText="To:"/>
+                     <TextField fx:id="toTextField" layoutX="10.0" layoutY="10.0" onAction="#toTextFieldAction" prefHeight="27.0" prefWidth="150.0" promptText="To:" />
                      <Button mnemonicParsing="false" onAction="#clearDirections" text="Clear" />
                   </HBox>
                </VBox>
             </HBox>
 
-            <ToolBar HBox.hgrow="ALWAYS" />
-
             <HBox alignment="CENTER">
                <VBox>
                   <Label>Find By Address</Label>
-                  <TextField fx:id="findByAddressTextField" style="-fx-text-inner-color: red;" prefHeight="27.0" prefWidth="450.0" promptText="type in a destination, and press FIND..." onAction="#findByAddress" />
-                  <Button prefHeight="25" prefWidth="150" mnemonicParsing="false" onAction="#findByAddress" text="FIND" />
+                  <TextField fx:id="findByAddressTextField" onAction="#findByAddress" prefHeight="27.0" prefWidth="450.0" promptText="type in a destination, and press FIND..." style="-fx-text-inner-color: red;" />
+                  <Button mnemonicParsing="false" onAction="#findByAddress" prefHeight="25" prefWidth="150" text="FIND" />
                </VBox>
-               <Separator></Separator>
+               <Separator />
                <VBox>
                   <Label>Find By LatLon</Label>
-                  <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="90.0" promptText="lat:"/>
-                  <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="90.0" promptText="lon:"/>
+                  <TextField fx:id="latitudeText" prefHeight="27.0" prefWidth="90.0" promptText="lat:" />
+                  <TextField fx:id="longitudeText" prefHeight="27.0" prefWidth="90.0" promptText="lon:" />
                </VBox>
-               <Button prefHeight="25" prefWidth="75" mnemonicParsing="false" onAction="#revGeocode" text="find latlon" />
+               <Button mnemonicParsing="false" onAction="#revGeocode" prefHeight="25" prefWidth="75" text="find latlon" />
             </HBox>
-
-            <ToolBar HBox.hgrow="ALWAYS" />
 
             <HBox alignment="CENTER_RIGHT">
 
@@ -72,7 +88,7 @@
                   </ComboBox>
                </VBox>
 
-               <Separator></Separator>
+               <Separator />
 
                <VBox>
                   <Label>Choose Drawing</Label>
