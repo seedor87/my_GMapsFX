@@ -20,7 +20,7 @@ public class KMLBuilder {
     String fileName = ""; //file name
     String description = ""; //file description
     StringBuffer stringBuffer;
-    HashMap<String,String> map;
+    HashMap<String,String> shapesMap;
     private PrintWriter writer;
 
 
@@ -28,8 +28,8 @@ public class KMLBuilder {
      * empty constructor
      */
     public KMLBuilder() {
-         stringBuffer = new StringBuffer();
-        map = new HashMap<String,String>();
+        stringBuffer = new StringBuffer();
+        shapesMap = new HashMap<String,String>();
     }
 
     /**
@@ -42,7 +42,7 @@ public class KMLBuilder {
         this.fileName = fileName + ".kml";
         this.description = description;
         stringBuffer = new StringBuffer();
-        map = new HashMap<String,String>();
+        shapesMap = new HashMap<String,String>();
     }
 
     /**
@@ -75,17 +75,17 @@ public class KMLBuilder {
      */
     public void appendTo(String content) throws IOException{
         boolean inMap = false;
-        for(Map.Entry m:map.entrySet()){
+        for(Map.Entry m: shapesMap.entrySet()){
             if(m.getValue().equals(content)) {
                 inMap = true;
             }
         }
         if(!inMap) //the content is not already in the MAP
         {
-            System.out.println("shape entered into map");
+            System.out.println("shape entered into shapesMap");
             String uniqueID = UUID.randomUUID().toString();
-            map.put(uniqueID, content);
-            //add content to map with unique ID
+            shapesMap.put(uniqueID, content);
+            //add content to shapesMap with unique ID
             stringBuffer.append(content).append(System.getProperty("line.separator"));
         }
         else {

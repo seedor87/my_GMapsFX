@@ -73,7 +73,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
 
     @FXML
-    protected GoogleMapView mapView;    //Map View used to render all of map
+    protected GoogleMapView mapView;    //Map View used to render all of shapesMap
     @FXML
     protected Label crossHairs; //The centered focal point to denote the center of the screen
     @FXML
@@ -269,7 +269,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
         } else if(extension.equals("kml")) {
             deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
-            actualizeKML(file.getAbsolutePath(), map);
+            actualizeKML(file.getAbsolutePath());
         } else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
@@ -361,10 +361,9 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
      * Literally just copied and pasted fromText earlier
      *
      * @param filePath
-     * @param map
      * @return Polygon c
      */
-    private void actualizeKML(String filePath, GoogleMap map){
+    private void actualizeKML(String filePath){
         ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists(filePath);
         for (int i = 0; i < from_kml.size(); i++) {
             ArrayList<double[]> current_polygon = from_kml.get(i);
@@ -393,6 +392,13 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
+                }
+            });
+
+            map.addUIEventHandler(shape, UIEventType.rightclick, new UIEventHandler() {
+                @Override
+                public void handle(JSObject obj) {
+                    map.removeMapShape(shape);
                 }
             });
         }
@@ -447,7 +453,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             ex.printStackTrace();
         }
 
-        // init underlay map
+        // init underlay shapesMap
         options.zoomControl(true)
                 .zoom(16)
                 .overviewMapControl(false)
@@ -507,7 +513,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         crossHairs.setStyle("-fx-font-size: 21;");
         crossHairs.setTextFill(Color.RED);
 
-        // init combo box for map type
+        // init combo box for shapesMap type
         mapTypeCombo.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> selected, String oldType, String newType) {
@@ -601,6 +607,14 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                             }
                         }
                     });
+
+                    map.addUIEventHandler(circle, UIEventType.rightclick, new UIEventHandler() {
+                        @Override
+                        public void handle(JSObject obj) {
+                            map.removeMapShape(circle);
+                        }
+                    });
+
                     all_map_shapes.add(circle);
                     map.addMapShape(circle);
                     break;
@@ -634,6 +648,14 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                             }
                         }
                     });
+
+                    map.addUIEventHandler(rectangle, UIEventType.rightclick, new UIEventHandler() {
+                        @Override
+                        public void handle(JSObject obj) {
+                            map.removeMapShape(rectangle);
+                        }
+                    });
+
                     all_map_shapes.add(rectangle);
                     map.addMapShape(rectangle);
                     break;
@@ -666,10 +688,18 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                                 }
                             }
                         });
+
+                        map.addUIEventHandler(polygon, UIEventType.rightclick, new UIEventHandler() {
+                            @Override
+                            public void handle(JSObject obj) {
+                                map.removeMapShape(polygon);
+                            }
+                        });
+
                     } else {
                         System.out.println("No More Than 1 point clicked");
                     }
-                    polygon_coords = new ArrayList<LatLong>();
+                    polygon_coords = new ArrayList<LatLong>();  // reset polygon points to fresh state
                     break;
                 default:
                     break;
