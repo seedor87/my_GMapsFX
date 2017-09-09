@@ -3,7 +3,6 @@ import com.lynden.gmapsfx.javascript.object.LatLong;
 import javafx.event.EventDispatchChain;
 import javafx.event.EventDispatcher;
 import javafx.event.EventTarget;
-import javafx.scene.control.TextField;
 
 import java.awt.*;
 

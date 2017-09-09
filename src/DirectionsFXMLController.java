@@ -10,9 +10,6 @@ import netscape.javascript.JSObject;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -579,11 +576,15 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         .visible(true)
                     );
 
-                    // Used toText ellipse-ify the circle toText match perspective on zoom an dun-zoom
+                    // Used to ellipse-ify the circle to match perspective on zoom and un-zoom
                     double radius = 0.0005;
                     double xrad = 0.88 * radius;
                     double yrad = 1.12 * radius;
-                    final ArrayList<double[]> c_ps = CircleMaker.yield_ellipse(event.getLatLong().getLatitude(), event.getLatLong().getLongitude(), xrad, yrad);
+                    final ArrayList<double[]> c_ps = CircleMaker.yield_ellipse(
+                            event.getLatLong().getLatitude(),
+                            event.getLatLong().getLongitude(),
+                            xrad,
+                            yrad);
                     final ArrayList<LatLong> c_ll = new ArrayList<LatLong>();
                     for (double[] pair : c_ps) {
                         c_ll.add(new LatLong(pair[0], pair[1]));
