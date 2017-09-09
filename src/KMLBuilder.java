@@ -52,10 +52,8 @@ public class KMLBuilder {
      * @throws IOException
      */
     public void createFile(File file) throws IOException {
-        fileName = file.getName();
 
         String content = stringBuffer.toString();
-
         String str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n" +
                 "<Document>\n" +
@@ -65,22 +63,10 @@ public class KMLBuilder {
                 content + "\n" +
                 "</Document>\n" +
                 "</kml>";
-
-
-        //create file
-        File outPutFile = new File(fileName);//gets file name from timestamp
-
-        if (outPutFile.createNewFile()) {
-            String text = "";
-            writer = new PrintWriter(
-                    fileName, "UTF-8");
-            writer.write(str);
-            writer.close();
-        } else {
-            System.out.println("File Creation Unsuccessful!.");
-        }
-
-
+        writer = new PrintWriter(
+                file, "UTF-8");
+        writer.write(str);
+        writer.close();
     }
 
     /**

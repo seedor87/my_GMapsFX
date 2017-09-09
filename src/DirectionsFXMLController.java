@@ -41,6 +41,9 @@ import javafx.stage.Stage;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
+    private final String JSON_TEMP_FILEPATH = "files" + "\\" + "temp" + ".json";
+    private File KML_FILE;
+
     private GeocodingService geocodingService;
     private DirectionsService directionsService;
     private DirectionsPane directionsPane;
@@ -52,8 +55,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private KMLBuilder kmlBuilder = new KMLBuilder();
     private BufferedWriter bw;
     private boolean alreadySaved;
-    private FileWriter currFile;
-    private File temp;
 
     private StringProperty fromText = new SimpleStringProperty();
     private StringProperty toText = new SimpleStringProperty();
@@ -208,7 +209,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private void openFile(ActionEvent event) {
         /**
          * Ex. File Path
-         * String defFilePath = "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170815_182137.json";
+         * String defFilePath = "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\20170815_182137.json";
+         * String defFilePath = "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\20170803_183338.kml"
          */
         FileChooser fileChooser = new FileChooser();
         fileChooser.setInitialDirectory(new File(".\\"));
@@ -255,6 +257,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 exc.printStackTrace();
             }
         } else if(extension.equals("kml")) {
+            deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
             actualizeKML(file.getAbsolutePath(), map);
         } else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -281,28 +284,55 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     public void saveKmlAs() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setInitialDirectory(new File(".\\"));
-        File file = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
-        if (file != null) {
-            try {
-                kmlBuilder.createFile(file);
-            }
-            catch(IOException ex) {
-                ex.printStackTrace();
-            }
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
+                "KML files (*.kml)",
+                "*.kml");
+        fileChooser.getExtensionFilters().add(extFilter);
+        File temp = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
+        if (temp != null) {
+            KML_FILE = temp;
+            saveKml();
+        } else {
+            System.err.println("Invalid File Chosen");
         }
-        alreadySaved = true;
     }
 
     public void saveKml() {
-        if(!alreadySaved) {
+        if(KML_FILE == null) {
             saveKmlAs();
         } else {
             try {
-                currFile = new FileWriter(temp, false);
+                kmlBuilder.createFile(KML_FILE);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void saveJsonAs() {
+//        FileChooser fileChooser = new FileChooser();
+//        fileChooser.setInitialDirectory(new File(".\\"));
+//        File file = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
+//        if (file != null) {
+//            try {
+//                kmlBuilder.createFile(file);
+//            }
+//            catch(IOException ex) {
+//                ex.printStackTrace();
+//            }
+//        }
+    }
+
+    public void saveJson() {
+//        if(!alreadySaved) {
+//            saveJsonAs();
+//        } else {
+//            try {
+//                currFile = new FileWriter(temp, false);
+//            } catch (IOException ex) {
+//                ex.printStackTrace();
+//            }
+//        }
     }
 
     /**
@@ -378,10 +408,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         MapOptions options = new MapOptions();
 
         try {
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-            String fileName =  timeStamp + ".json";
-            fileName = "files" + "\\" + fileName;
-            bw = new BufferedWriter( new FileWriter(fileName));
+            bw = new BufferedWriter( new FileWriter(JSON_TEMP_FILEPATH));
         } catch(IOException ex) {
             ex.printStackTrace();
         }
