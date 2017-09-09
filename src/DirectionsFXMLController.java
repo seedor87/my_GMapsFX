@@ -4,11 +4,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import javafx.application.Platform;
 import javafx.stage.FileChooser;
 import netscape.javascript.JSObject;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -41,8 +45,10 @@ import javafx.stage.Stage;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
-    private final String JSON_TEMP_FILEPATH = "files" + "\\" + "temp" + ".json";
+    private final String JSON_TEMP_FILE_PATH = ".\\tmp\\" + genDatedName() + ".json";
+
     private File KML_FILE;
+    private File JSON_FILE;
 
     private GeocodingService geocodingService;
     private DirectionsService directionsService;
@@ -96,6 +102,11 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         InteractionWrapper test = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
         Gson gson = new Gson();
         gson.toJson(test, bw);
+        try {
+            bw.flush();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void findByAddress(String givenAddress) {
@@ -136,9 +147,9 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             map.setMapType(MapTypeIdEnum.SATELLITE);
 
 //            Used to show alert about info at point
-//            Platform.runLater( () -> {
-//                revGeocode(new ActionEvent());
-//            });
+            Platform.runLater( () -> {
+                revGeocode(new ActionEvent());
+            });
         });
     }
 
@@ -253,8 +264,11 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                         }
                     }
                 }
-            } catch (IOException exc) {
-                exc.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                System.err.println("json exc");
             }
         } else if(extension.equals("kml")) {
             deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
@@ -293,7 +307,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             KML_FILE = temp;
             saveKml();
         } else {
-            System.err.println("Invalid File Chosen");
+            System.err.println("Invalid KML File Chosen");
         }
     }
 
@@ -310,29 +324,40 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     }
 
     public void saveJsonAs() {
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.setInitialDirectory(new File(".\\"));
-//        File file = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
-//        if (file != null) {
-//            try {
-//                kmlBuilder.createFile(file);
-//            }
-//            catch(IOException ex) {
-//                ex.printStackTrace();
-//            }
-//        }
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(".\\"));
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
+                "Json files (*.json)",
+                "*.json");
+        fileChooser.getExtensionFilters().add(extFilter);
+        File temp = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
+        if (temp != null) {
+            JSON_FILE = temp;
+            saveJson();
+        } else {
+            System.err.println("Invalid Json File Chosen");
+        }
     }
 
     public void saveJson() {
-//        if(!alreadySaved) {
-//            saveJsonAs();
-//        } else {
-//            try {
-//                currFile = new FileWriter(temp, false);
-//            } catch (IOException ex) {
-//                ex.printStackTrace();
-//            }
-//        }
+        if(JSON_FILE == null) {
+            saveJsonAs();
+        } else {
+            try {
+                BufferedReader inputStream = new BufferedReader(new FileReader(JSON_TEMP_FILE_PATH));
+                FileWriter filewriter = new FileWriter(JSON_FILE.getAbsoluteFile());
+                BufferedWriter outputStream = new BufferedWriter(filewriter);
+                String count;
+                while ((count = inputStream.readLine()) != null) {
+                    outputStream.write(count);
+                }
+                outputStream.flush();
+                outputStream.close();
+                inputStream.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -402,13 +427,25 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         }
     }
 
+    private String genDatedName() {
+        return new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+    }
+
+
     @Override
     public void mapInitialized() {
         geocodingService = new GeocodingService();
         MapOptions options = new MapOptions();
 
+        File[] files = new File(".\\tmp\\").listFiles();
+        if(files!=null) { //some JVMs return null for empty dirs
+            for(File f: files) {
+                f.delete();
+            }
+        }
+
         try {
-            bw = new BufferedWriter( new FileWriter(JSON_TEMP_FILEPATH));
+            bw = new BufferedWriter( new FileWriter(JSON_TEMP_FILE_PATH));
         } catch(IOException ex) {
             ex.printStackTrace();
         }
@@ -435,6 +472,11 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 InteractionWrapper test = new InteractionWrapper(lat, lon, map);
                 Gson gson = new Gson();
                 gson.toJson(test, bw);
+                try {
+                    bw.flush();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
 
@@ -453,13 +495,16 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         });
 
 
-        // Style the findByAddressTextField text field
+        /*
+        Style the findByAddressTextField text field
+        */
 //        findByAddressTextField.setStyle("-fx-background-color: #a9a9a9 , white , white;\n" +
 //                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;");
 //        findByAddressTextField.setStyle(".text-field:focused {\n" +
 //                "    -fx-background-color: #a9a9a9 , white , white;\n" +
 //                "    -fx-background-insets: 0 -1 -1 -1, 0 0 0 0, 0 -1 3 -1;\n" +
 //                "}");
+
         findByAddressTextField.setAlignment(Pos.BASELINE_CENTER);
         toolBarTop.prefWidthProperty().bind((toolBarTop.getScene().getWindow()).widthProperty());
         crossHairs.setStyle("-fx-font-size: 21;");

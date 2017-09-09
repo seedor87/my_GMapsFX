@@ -90,7 +90,7 @@ public class KMLBuilder {
             stringBuffer.append(content).append(System.getProperty("line.separator"));
         }
         else {
-            System.out.println("Polygon is already in the KML file.");
+            System.err.println("Polygon is already in the KML file.");
         }
     }
 
@@ -189,10 +189,6 @@ public class KMLBuilder {
      * @return File name as a string.
      */
     public String getFileName() {
-//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-//        String fileName =  timeStamp + ".kml";
-//        return kmlDir + "\\" + fileName;
-
         return kmlDir + "\\temp.kml";
     }
 
