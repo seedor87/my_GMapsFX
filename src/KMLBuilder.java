@@ -29,11 +29,8 @@ public class KMLBuilder {
      * empty constructor
      */
     public KMLBuilder() {
-
          stringBuffer = new StringBuffer();
         map = new HashMap<String,String>();
-
-
     }
 
     /**
@@ -54,10 +51,8 @@ public class KMLBuilder {
      *
      * @throws IOException
      */
-    public void createFile() throws IOException {
-        if (fileName == "") {
-            fileName = getFileName();
-        }
+    public void createFile(File file) throws IOException {
+        fileName = file.getName();
 
         String content = stringBuffer.toString();
 
@@ -102,6 +97,7 @@ public class KMLBuilder {
         }
         if(!inMap) //the content is not already in the MAP
         {
+            System.out.println("shape entered into map");
             String uniqueID = UUID.randomUUID().toString();
             map.put(uniqueID, content);
             //add content to map with unique ID
@@ -207,9 +203,11 @@ public class KMLBuilder {
      * @return File name as a string.
      */
     public String getFileName() {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-        String fileName =  timeStamp + ".kml";
-        return kmlDir + "\\" + fileName;
+//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+//        String fileName =  timeStamp + ".kml";
+//        return kmlDir + "\\" + fileName;
+
+        return kmlDir + "\\temp.kml";
     }
 
 

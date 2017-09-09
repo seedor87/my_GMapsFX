@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import javafx.stage.FileChooser;
 import netscape.javascript.JSObject;
 
 import java.io.*;
@@ -50,9 +51,13 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     private DecimalFormat formatter = new DecimalFormat("###.0000000");
     private KMLBuilder kmlBuilder = new KMLBuilder();
     private BufferedWriter bw;
+    private boolean alreadySaved;
+    private FileWriter currFile;
+    private File temp;
 
     private StringProperty fromText = new SimpleStringProperty();
     private StringProperty toText = new SimpleStringProperty();
+    public List<MapShape> all_map_shapes = new ArrayList<>();
     public ArrayList<LatLong> polygon_coords = new ArrayList<>();
 
     public enum drawTypes {
@@ -200,52 +205,64 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     }
 
     @FXML
-    private void debugAction(ActionEvent event) {
+    private void openFile(ActionEvent event) {
+        /**
+         * Ex. File Path
+         * String defFilePath = "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170815_182137.json";
+         */
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(".\\"));
+        File file = fileChooser.showOpenDialog(DirectionsApiMainApp.getPrimaryStage());
+        int i = file.getName().lastIndexOf('.');
+        String extension = "";
+        if (i >= 0) {
+            extension = file.getName().substring(i+1);
+        }
 
-//        Gson gson = new Gson();
-//        Type type = new TypeToken<Map<String, String>>(){}.getType();
-//        Map<String, String> myMap = gson.fromJson(test.toString(), type);
-//        switch(InteractionWrapper.Type.valueOf(myMap.get("type"))) {
-//            case ADDRESS_BAR :
-//                System.out.println("doing it");
-//        }
-
-        try {
-            InputStream is = new FileInputStream(new File("C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\kml\\20170815_182137.json"));
-            Reader r = new InputStreamReader(is, "UTF-8");
-            Gson gson = new GsonBuilder().create();
-            JsonStreamParser p = new JsonStreamParser(r);
-            while (p.hasNext()) {
-                JsonElement e;
-                try {
-                    e = p.next();
-                } catch (Exception ex) {
-                    /* break case for malformed json exception */
-                    break;
-                }
-                if (e.isJsonObject()) {
-                    gson.fromJson(e, Map.class);
-                    InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
-                    EventTarget target;
-                    switch(test.getType()) {
-                        case ADDRESS_BAR:
-                            target = new MyEventTarget(test.getText(), findByAddressTextField);
-                            Event.fireEvent(target, new Event(EventType.ROOT));
-                            break;
-                        case CENTER_MOVED:
-                            target = new NewEventTarget(test.getLat(), test.getLon(), map);
-                            Event.fireEvent(target, new Event(EventType.ROOT));
-                            break;
-                        default:
-                            System.err.println("invalid wrapper type");
+        if (extension.equals("json")) {
+            try {
+                InputStream is = new FileInputStream(file);
+                Reader r = new InputStreamReader(is, "UTF-8");
+                Gson gson = new GsonBuilder().create();
+                JsonStreamParser p = new JsonStreamParser(r);
+                while (p.hasNext()) {
+                    JsonElement e;
+                    try {
+                        e = p.next();
+                    } catch (Exception ex) {
+                        /*
+                         *  break case for malformed json exception
+                         */
+                        break;
+                    }
+                    if (e.isJsonObject()) {
+                        gson.fromJson(e, Map.class);
+                        InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
+                        EventTarget target;
+                        switch (test.getType()) {
+                            case ADDRESS_BAR:
+                                target = new MyEventTarget(test.getText(), findByAddressTextField);
+                                Event.fireEvent(target, new Event(EventType.ROOT));
+                            case CENTER_MOVED:
+                                target = new NewEventTarget(test.getLat(), test.getLon(), map);
+                                Event.fireEvent(target, new Event(EventType.ROOT));
+                            default:
+                                break;
+                        }
                     }
                 }
+            } catch (IOException exc) {
+                exc.printStackTrace();
             }
+        } else if(extension.equals("kml")) {
+            actualizeKML(file.getAbsolutePath(), map);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Invalid FIle Type Chosen");
+            alert.setContentText("Please Choose a file with the extension .json or .kml");
+            alert.showAndWait();
         }
-        catch (Exception exc) {
-            exc.printStackTrace();
-        }
-
     }
 
     @Override
@@ -261,18 +278,30 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         fromText.bindBidirectional(fromTextField.textProperty());
     }
 
-
-    /**
-     * Is called later in code, when the application is closed.
-     * Uses kmlBuilder field toText create the KML file.
-     */
-    public void closeFile() {
-        // After the polygons are all added, do createFile toText finish.
-        try {
-            kmlBuilder.createFile();
+    public void saveKmlAs() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(".\\"));
+        File file = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
+        if (file != null) {
+            try {
+                kmlBuilder.createFile(file);
+            }
+            catch(IOException ex) {
+                ex.printStackTrace();
+            }
         }
-        catch(IOException ex) {
-            ex.printStackTrace();
+        alreadySaved = true;
+    }
+
+    public void saveKml() {
+        if(!alreadySaved) {
+            saveKmlAs();
+        } else {
+            try {
+                currFile = new FileWriter(temp, false);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -283,7 +312,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
      * @param map
      * @return Polygon c
      */
-    private void makeArray4Shape(String filePath, GoogleMap map){
+    private void actualizeKML(String filePath, GoogleMap map){
         ArrayList<ArrayList<double[]>> from_kml = KMLParser.getCoordinateArrayLists(filePath);
         for (int i = 0; i < from_kml.size(); i++) {
             ArrayList<double[]> current_polygon = from_kml.get(i);
@@ -292,21 +321,22 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 array[j] = new LatLong(current_polygon.get(j)[1], current_polygon.get(j)[0]); //NOTE, switch lat and long here for proper location
             }
             MVCArray pmvc = new MVCArray(array);
-            PolygonOptions polyOpts = new PolygonOptions()
+            PolygonOptions shapeOptions = new PolygonOptions()
                     .paths(pmvc)
                     .strokeColor("blue")
                     .strokeWeight(2)
                     .editable(false)
                     .fillColor("red")
                     .fillOpacity(0.5);
-            Polygon poly = new Polygon(polyOpts);
-            map.addMapShape(poly);
+            Polygon shape = new Polygon(shapeOptions);
+            all_map_shapes.add(shape);
+            map.addMapShape(shape);
 
-            map.addUIEventHandler(poly, UIEventType.click, new UIEventHandler() {
+            map.addUIEventHandler(shape, UIEventType.click, new UIEventHandler() {
                 @Override
                 public void handle(JSObject obj) {
                     try {
-                        String poly = kmlBuilder.polygon(Arrays.asList(array), new ArrayList<LatLong>(), "Test for Circle");
+                        String poly = kmlBuilder.polygon(Arrays.asList(array), new ArrayList<LatLong>(), "Test for shape");
                         kmlBuilder.appendTo(poly);
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -316,8 +346,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         }
 
     }
-
-    public void open() {}
 
     public void recenterMap(double lat, double lon) {
         recenterMap(new LatLong(lat, lon));
@@ -338,6 +366,12 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         map.setZoom(val);
     }
 
+    public void deleteAllShapes(Event event) {
+        for (MapShape mapShape : all_map_shapes) {
+            map.removeMapShape(mapShape);
+        }
+    }
+
     @Override
     public void mapInitialized() {
         geocodingService = new GeocodingService();
@@ -346,7 +380,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         try {
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
             String fileName =  timeStamp + ".json";
-            fileName = "kml" + "\\" + fileName;
+            fileName = "files" + "\\" + fileName;
             bw = new BufferedWriter( new FileWriter(fileName));
         } catch(IOException ex) {
             ex.printStackTrace();
@@ -380,10 +414,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         mapCenter = new LatLong(39.70836, -75.11803);
         recenterMap(mapCenter);
 
-        // This static method loads, illustrates, and add listeners to the polygons upon load
-        makeArray4Shape(".\\kml\\20170803_183338.kml", map);
-
-
         //New code fromText Brooke: grabs the primaryStage field fromText the DirectionsApiMainApp and handles the
         //event "exit the application" field toText carry out the closeField method
         Stage s = DirectionsApiMainApp.getPrimaryStage();
@@ -393,7 +423,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             } catch(IOException ex) {
                 ex.printStackTrace();
             }
-            closeFile();
         });
 
 
@@ -499,6 +528,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                             }
                         }
                     });
+                    all_map_shapes.add(circle);
                     map.addMapShape(circle);
                     break;
 
@@ -531,6 +561,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                             }
                         }
                     });
+                    all_map_shapes.add(rectangle);
                     map.addMapShape(rectangle);
                     break;
 
@@ -547,14 +578,15 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                                 .strokeWeight(2)
                                 .editable(false)
                                 .fillColor("red");
-                        Polygon p = new Polygon(poly_opts);
-                        map.addMapShape(p);
+                        Polygon polygon = new Polygon(poly_opts);
+                        all_map_shapes.add(polygon);
+                        map.addMapShape(polygon);
 
-                        map.addUIEventHandler(p, UIEventType.click, new UIEventHandler() {
+                        map.addUIEventHandler(polygon, UIEventType.click, new UIEventHandler() {
                             @Override
                             public void handle(JSObject obj) {
                                 try {
-                                    String poly = kmlBuilder.polygon(Arrays.asList(poly_array), new ArrayList<LatLong>(), "Test for Circle");
+                                    String poly = kmlBuilder.polygon(Arrays.asList(poly_array), new ArrayList<LatLong>(), "Test for Polygon");
                                     kmlBuilder.appendTo(poly);
                                 } catch (IOException ex) {
                                     ex.printStackTrace();
@@ -564,10 +596,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                     } else {
                         System.out.println("No More Than 1 point clicked");
                     }
-
                     polygon_coords = new ArrayList<LatLong>();
                     break;
-
                 default:
                     break;
             }

@@ -16,32 +16,33 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.SplitMenuButton?>
 <AnchorPane id="AnchorPane" prefHeight="900.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="DirectionsFXMLController">
 
    <children>
       <GoogleMapView fx:id="mapView" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <MenuBar minWidth="-Infinity">
+            <MenuBar AnchorPane.bottomAnchor="0.0" minWidth="-Infinity">
               <menus>
-                <Menu mnemonicParsing="false" text="Save">
+                <Menu mnemonicParsing="false" text="Open">
                   <items>
-                     <MenuItem mnemonicParsing="false" text="Save File" onAction="#closeFile"/>
-                     <MenuItem mnemonicParsing="false" text="Save As" />
+                     <MenuItem mnemonicParsing="false" text="Open File" onAction="#openFile" />
                   </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Open">
-                 <items>
-                    <MenuItem mnemonicParsing="false" text="Open File" onAction="#open" />
-                    <MenuItem mnemonicParsing="false" text="Open Debug" onAction="#debugAction" />
-                 </items>
-                </Menu>
               </menus>
+               <Menu mnemonicParsing="false" text="Save">
+                  <items>
+                     <MenuItem mnemonicParsing="false" text="Save File" onAction="#saveKml"/>
+                     <MenuItem mnemonicParsing="false" text="Save As" onAction="#saveKmlAs"/>
+                  </items>
+               </Menu>
             </MenuBar>
          </children></GoogleMapView>
 
       <Label fx:id="crossHairs">^</Label>
 
-      <ToolBar fx:id="toolBarTop" layoutX="276.0" prefHeight="0.0" prefWidth="914.0" style="-fx-alignment: CENTER" styleClass="spacer" AnchorPane.leftAnchor="276.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" HBox.hgrow="ALWAYS">
+      <ToolBar fx:id="toolBarTop" layoutX="Infinity" prefHeight="0.0" prefWidth="Infinity" style="-fx-alignment: CENTER" styleClass="spacer" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" HBox.hgrow="ALWAYS">
          <items>
             <HBox alignment="CENTER">
                <VBox>
@@ -61,7 +62,9 @@
                <VBox>
                   <Label>Find By Address</Label>
                   <TextField fx:id="findByAddressTextField" onAction="#findByAddress" prefHeight="27.0" prefWidth="450.0" promptText="type in a destination, and press FIND..." style="-fx-text-inner-color: red;" />
-                  <Button mnemonicParsing="false" onAction="#findByAddress" prefHeight="25" prefWidth="150" text="FIND" />
+                  <HBox alignment="CENTER">
+                     <Button mnemonicParsing="false" onAction="#findByAddress" prefHeight="25" prefWidth="150" text="FIND" />
+                  </HBox>
                </VBox>
                <Separator />
                <VBox>
@@ -103,10 +106,14 @@
                      </items>
                   </ComboBox>
                </VBox>
-               <Label>Choose Drawing</Label>
-                  <Button mnemonicParsing="false" onAction="#debugAction" text="debug" />
-               <VBox>
 
+               <Separator />
+
+               <VBox>
+                  <Label>Delete All Shapes</Label>
+                  <Button fx:id="deleteAllShapes" onAction="#deleteAllShapes">
+                     Delete All Shapes
+                  </Button>
                </VBox>
             </HBox>
 
