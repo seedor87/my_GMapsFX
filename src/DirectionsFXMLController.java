@@ -44,6 +44,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     private final String JSON_TEMP_FILE_PATH = ".\\tmp\\" + genDatedName() + ".json";
 
+    private File JNOTE_FILE;
     private File KML_FILE;
     private File JSON_FILE;
 
@@ -223,59 +224,66 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         FileChooser fileChooser = new FileChooser();
         fileChooser.setInitialDirectory(new File(".\\"));
         File file = fileChooser.showOpenDialog(DirectionsApiMainApp.getPrimaryStage());
-        int i = file.getName().lastIndexOf('.');
-        String extension = "";
-        if (i >= 0) {
-            extension = file.getName().substring(i+1);
-        }
+        if(file != null) {
+            int i = file.getName().lastIndexOf('.');
+            String extension = "";
+            if (i >= 0) {
+                extension = file.getName().substring(i + 1);
+            }
 
-        if (extension.equals("json")) {
-            try {
-                InputStream is = new FileInputStream(file);
-                Reader r = new InputStreamReader(is, "UTF-8");
-                Gson gson = new GsonBuilder().create();
-                JsonStreamParser p = new JsonStreamParser(r);
-                while (p.hasNext()) {
-                    JsonElement e;
-                    try {
-                        e = p.next();
-                    } catch (Exception ex) {
-                        /*
-                         *  break case for malformed json exception
-                         */
-                        break;
-                    }
-                    if (e.isJsonObject()) {
-                        gson.fromJson(e, Map.class);
-                        InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
-                        EventTarget target;
-                        switch (test.getType()) {
-                            case ADDRESS_BAR:
-                                target = new MyEventTarget(test.getText(), findByAddressTextField);
-                                Event.fireEvent(target, new Event(EventType.ROOT));
-                            case CENTER_MOVED:
-                                target = new NewEventTarget(test.getLat(), test.getLon(), map);
-                                Event.fireEvent(target, new Event(EventType.ROOT));
-                            default:
-                                break;
+            if (extension.equals("json")) {
+                try {
+                    InputStream is = new FileInputStream(file);
+                    Reader r = new InputStreamReader(is, "UTF-8");
+                    Gson gson = new GsonBuilder().create();
+                    JsonStreamParser p = new JsonStreamParser(r);
+                    while (p.hasNext()) {
+                        JsonElement e;
+                        try {
+                            e = p.next();
+                        } catch (Exception ex) {
+                            /*
+                             *  break case for malformed json exception
+                             */
+                            break;
+                        }
+                        if (e.isJsonObject()) {
+                            gson.fromJson(e, Map.class);
+                            InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
+                            EventTarget target;
+                            switch (test.getType()) {
+                                case ADDRESS_BAR:
+                                    target = new MyEventTarget(test.getText(), findByAddressTextField);
+                                    Event.fireEvent(target, new Event(EventType.ROOT));
+                                case CENTER_MOVED:
+                                    target = new NewEventTarget(test.getLat(), test.getLon(), map);
+                                    Event.fireEvent(target, new Event(EventType.ROOT));
+                                default:
+                                    break;
+                            }
                         }
                     }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    System.err.println("json exc");
                 }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                System.err.println("json exc");
+            } else if (extension.equals("kml")) {
+                deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
+                actualizeKML(file.getAbsolutePath());
+            } else if( extension.equals("jnote")) {
+                System.out.println(FilePacker.retrieveFromZip(file.getName(), "myKml.kml"));
+                System.out.println(FilePacker.retrieveFromZip(file.getName(), "myJson.kml"));
+            }else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Invalid FIle Type Chosen");
+                alert.setContentText("Please Choose a file with the extension .json or .kml");
+                alert.showAndWait();
             }
-        } else if(extension.equals("kml")) {
-            deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
-            actualizeKML(file.getAbsolutePath());
         } else {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Invalid FIle Type Chosen");
-            alert.setContentText("Please Choose a file with the extension .json or .kml");
-            alert.showAndWait();
+//            throw new RuntimeException("invalid file chosen");
         }
     }
 
@@ -356,6 +364,35 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
         }
     }
+
+    public void saveJnoteAs() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(".\\"));
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
+                "Jnote files (*.jnote)",
+                "*.jnote");
+        fileChooser.getExtensionFilters().add(extFilter);
+        File temp = fileChooser.showSaveDialog(DirectionsApiMainApp.getPrimaryStage());
+        if (temp != null) {
+            JNOTE_FILE = temp;
+            saveJnote();
+        } else {
+            System.err.println("Invalid Jnote File Chosen");
+        }
+    }
+
+    public void saveJnote() {
+        if(JNOTE_FILE == null) {
+            saveJnoteAs();
+        } else {
+            FilePacker.createZip(JNOTE_FILE.getName(), new ArrayList<>(Arrays.asList(
+                    "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myJson.json",
+                    "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myKml.kml"
+            )));
+        }
+    }
+
+
 
     /**
      * Literally just copied and pasted fromText earlier

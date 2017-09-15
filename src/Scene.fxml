@@ -35,6 +35,8 @@
                      <MenuItem mnemonicParsing="false" text="Save KML As" onAction="#saveKmlAs"/>
                      <MenuItem mnemonicParsing="false" text="Save Json File" onAction="#saveJson"/>
                      <MenuItem mnemonicParsing="false" text="Save Json As" onAction="#saveJsonAs"/>
+                     <MenuItem mnemonicParsing="false" text="Save Jnote" onAction="#saveJnote"/>
+                     <MenuItem mnemonicParsing="false" text="Save Jnote As" onAction="#saveJnoteAs"/>
                   </items>
                </Menu>
             </MenuBar>
