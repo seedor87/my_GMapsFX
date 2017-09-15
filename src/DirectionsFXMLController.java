@@ -237,8 +237,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
                 actualizeKML(file.getAbsolutePath());
             } else if( extension.equals("jnote")) {
-                System.out.println(FilePacker.retrieveFromZip(file.getName(), "myKml.kml"));
-                System.out.println(FilePacker.retrieveFromZip(file.getName(), "myJson.kml"));
+                actualizeKML(FilePacker.retrieveFromZip(file.getName(), "myKml.kml"));
+                actualizeJSON(new File(FilePacker.retrieveFromZip(file.getName(), "myJson.json")));
             }else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
