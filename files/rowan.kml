@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name></name>
+  <description></description>
+  <open>1</open>
+<Placemark>
+    <name>Test for Polygon</name>
+    <Polygon>
+      <extrude>1</extrude>
+      <altitudeMode>clampToGround</altitudeMode>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>
+	-75.1238465309143,39.7116601266863,0
+	-75.12672185897827,39.70835870095809,0
+	-75.12255907058716,39.70398406851948,0
+	-75.11348247528076,39.7047599669594,0
+	-75.11097192764282,39.71071923645085,0
+	-75.11715173721313,39.71261751059553,0
+          </coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
+  </Placemark>
+
+</Document>
+</kml>

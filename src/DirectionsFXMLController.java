@@ -232,43 +232,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
 
             if (extension.equals("json")) {
-                try {
-                    InputStream is = new FileInputStream(file);
-                    Reader r = new InputStreamReader(is, "UTF-8");
-                    Gson gson = new GsonBuilder().create();
-                    JsonStreamParser p = new JsonStreamParser(r);
-                    while (p.hasNext()) {
-                        JsonElement e;
-                        try {
-                            e = p.next();
-                        } catch (Exception ex) {
-                            /*
-                             *  break case for malformed json exception
-                             */
-                            break;
-                        }
-                        if (e.isJsonObject()) {
-                            gson.fromJson(e, Map.class);
-                            InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
-                            EventTarget target;
-                            switch (test.getType()) {
-                                case ADDRESS_BAR:
-                                    target = new MyEventTarget(test.getText(), findByAddressTextField);
-                                    Event.fireEvent(target, new Event(EventType.ROOT));
-                                case CENTER_MOVED:
-                                    target = new NewEventTarget(test.getLat(), test.getLon(), map);
-                                    Event.fireEvent(target, new Event(EventType.ROOT));
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    System.err.println("json exc");
-                }
+                actualizeJSON(file);
             } else if (extension.equals("kml")) {
                 deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
                 actualizeKML(file.getAbsolutePath());
@@ -439,7 +403,46 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 }
             });
         }
+    }
 
+    private void actualizeJSON(File file) {
+        try {
+            InputStream is = new FileInputStream(file);
+            Reader r = new InputStreamReader(is, "UTF-8");
+            Gson gson = new GsonBuilder().create();
+            JsonStreamParser p = new JsonStreamParser(r);
+            while (p.hasNext()) {
+                JsonElement e;
+                try {
+                    e = p.next();
+                } catch (Exception ex) {
+                            /*
+                             *  break case for malformed json exception
+                             */
+                    break;
+                }
+                if (e.isJsonObject()) {
+                    gson.fromJson(e, Map.class);
+                    InteractionWrapper test = gson.fromJson(e, InteractionWrapper.class);
+                    EventTarget target;
+                    switch (test.getType()) {
+                        case ADDRESS_BAR:
+                            target = new MyEventTarget(test.getText(), findByAddressTextField);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                        case CENTER_MOVED:
+                            target = new NewEventTarget(test.getLat(), test.getLon(), map);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                        default:
+                            break;
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            System.err.println("json exc");
+        }
     }
 
     public void recenterMap(double lat, double lon) {
