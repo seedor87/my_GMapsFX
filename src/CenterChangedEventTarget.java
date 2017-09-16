@@ -9,13 +9,13 @@ import java.awt.*;
 /**
  * Created by Bob S on 8/13/2017.
  */
-public class NewEventTarget implements EventTarget {
+public class CenterChangedEventTarget implements EventTarget {
 
     private GoogleMap targetMap;
     private double lat;
     private double lon;
 
-    public NewEventTarget(Double lat, Double lon, GoogleMap target) {
+    public CenterChangedEventTarget(Double lat, Double lon, GoogleMap target) {
         this.lat = lat;
         this.lon = lon;
         this.targetMap = target;
@@ -32,17 +32,5 @@ public class NewEventTarget implements EventTarget {
                 return event;
             }
         });
-    }
-
-    /***
-     * Still kind of a STUB
-     */
-    public void pressEnter() {
-        try {
-            Robot robot = new Robot();
-            robot.keyPress(java.awt.event.KeyEvent.VK_ENTER);
-        } catch (java.awt.AWTException ex) {
-            ex.printStackTrace();
-        }
     }
 }

@@ -2,12 +2,12 @@ import javafx.event.*;
 import javafx.scene.control.TextField;
 import java.awt.*;
 
-public class MyEventTarget implements EventTarget {
+public class FindByAddressEventTarget implements EventTarget {
 
     private TextField targetTextField;
     private String input;
 
-    public MyEventTarget(String input, TextField target) {
+    public FindByAddressEventTarget(String input, TextField target) {
         this.input = input;
         this.targetTextField = target;
     }

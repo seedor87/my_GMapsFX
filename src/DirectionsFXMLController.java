@@ -42,8 +42,6 @@ import javafx.stage.Stage;
 
 public class DirectionsFXMLController implements Initializable, MapComponentInitializedListener, DirectionsServiceCallback {
 
-    private final String JSON_TEMP_FILE_PATH = ".\\tmp\\" + genDatedName() + ".json";
-
     private File JNOTE_FILE;
     private File KML_FILE;
     private File JSON_FILE;
@@ -57,13 +55,13 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     private DecimalFormat formatter = new DecimalFormat("###.0000000");
     private KMLBuilder kmlBuilder = new KMLBuilder();
-    private BufferedWriter bw;
-    private boolean alreadySaved;
 
     private StringProperty fromText = new SimpleStringProperty();
     private StringProperty toText = new SimpleStringProperty();
     public List<MapShape> all_map_shapes = new ArrayList<>();
     public ArrayList<LatLong> polygon_coords = new ArrayList<>();
+    public List<InteractionWrapper> interactionList = new LinkedList<>();
+    public final int MAX_INTERACTION_LIST_CAP = 500;
 
     public enum drawTypes {
         NONE, CIRCLE, SQUARE, POLYGON
@@ -95,16 +93,17 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
     @FXML
     private ComboBox<String> drawTypeCombo;
 
+    public void addToInteractionList(InteractionWrapper iw) {
+        if (interactionList.size() + 1 > MAX_INTERACTION_LIST_CAP) {
+            interactionList.remove(0);
+        }
+        interactionList.add(iw);
+    }
+
     public void findByAddress(ActionEvent event) {
         findByAddress(findByAddressTextField.getText());
-        InteractionWrapper test = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
-        Gson gson = new Gson();
-        gson.toJson(test, bw);
-        try {
-            bw.flush();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        InteractionWrapper findByAddressInteraction = new InteractionWrapper(findByAddressTextField.getText(), findByAddressTextField);
+        addToInteractionList(findByAddressInteraction);
     }
 
     public void findByAddress(String givenAddress) {
@@ -313,16 +312,17 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             saveJsonAs();
         } else {
             try {
-                BufferedReader inputStream = new BufferedReader(new FileReader(JSON_TEMP_FILE_PATH));
                 FileWriter filewriter = new FileWriter(JSON_FILE.getAbsoluteFile());
-                BufferedWriter outputStream = new BufferedWriter(filewriter);
-                String count;
-                while ((count = inputStream.readLine()) != null) {
-                    outputStream.write(count);
+                BufferedWriter bw = new BufferedWriter(filewriter);
+                Gson gson = new Gson();
+                for(InteractionWrapper interaction : interactionList) {
+                    gson.toJson(interaction, bw);
                 }
-                outputStream.flush();
-                outputStream.close();
-                inputStream.close();
+                try {
+                    bw.flush();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -427,13 +427,19 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                     EventTarget target;
                     switch (test.getType()) {
                         case ADDRESS_BAR:
-                            target = new MyEventTarget(test.getText(), findByAddressTextField);
+                            target = new FindByAddressEventTarget(test.getText(), findByAddressTextField);
                             Event.fireEvent(target, new Event(EventType.ROOT));
-                        case CENTER_MOVED:
-                            target = new NewEventTarget(test.getLat(), test.getLon(), map);
-                            Event.fireEvent(target, new Event(EventType.ROOT));
-                        default:
                             break;
+                        case CENTER_MOVED:
+                            target = new CenterChangedEventTarget(test.getLat(), test.getLon(), map);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                            break;
+                        case ZOOM_LEVEL:
+                            target = new ZoomLevelEventTarget(test.getZoom(), map);
+                            Event.fireEvent(target, new Event(EventType.ROOT));
+                            break;
+                        default:
+                            System.err.println("invalid event type encountered");
                     }
                 }
             }
@@ -441,7 +447,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             ex.printStackTrace();
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.err.println("json exc");
+            System.err.println("json exception encountered");
         }
     }
 
@@ -487,12 +493,6 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             }
         }
 
-        try {
-            bw = new BufferedWriter( new FileWriter(JSON_TEMP_FILE_PATH));
-        } catch(IOException ex) {
-            ex.printStackTrace();
-        }
-
         // init underlay shapesMap
         options.zoomControl(true)
                 .zoom(16)
@@ -508,18 +508,17 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
             public void handle() {
                 double lat = map.getCenter().getLatitude();
                 double lon = map.getCenter().getLongitude();
+                int zoom = map.getZoom();
+
                 latitudeText.setText(formatter.format(lat));
                 longitudeText.setText(formatter.format(lon));
                 crossHairs.setLayoutX(crossHairs.getScene().getWindow().getWidth() / 2 - crossHairs.getWidth());
                 crossHairs.setLayoutY(crossHairs.getScene().getWindow().getHeight() / 2 - crossHairs.getHeight()+1);
-                InteractionWrapper test = new InteractionWrapper(lat, lon, map);
-                Gson gson = new Gson();
-                gson.toJson(test, bw);
-                try {
-                    bw.flush();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+
+                InteractionWrapper centerLoc = new InteractionWrapper(lat, lon, map);
+                addToInteractionList(centerLoc);
+                InteractionWrapper zoomLv = new InteractionWrapper(zoom, map);
+                addToInteractionList(zoomLv);
             }
         });
 
@@ -530,11 +529,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         //event "exit the application" field toText carry out the closeField method
         Stage s = DirectionsApiMainApp.getPrimaryStage();
         s.setOnCloseRequest(event -> {
-            try {
-                bw.close();
-            } catch(IOException ex) {
-                ex.printStackTrace();
-            }
+            System.err.println("exiting...");
         });
 
 
