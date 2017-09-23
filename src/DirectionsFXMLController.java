@@ -236,8 +236,8 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
                 deleteAllShapes(new ActionEvent()); // delete all shapes before new kml file is loaded
                 actualizeKML(file.getAbsolutePath());
             } else if( extension.equals("jnote")) {
-                actualizeKML(FilePacker.retrieveFromZip(file.getName(), "myKml.kml"));
-                actualizeJSON(new File(FilePacker.retrieveFromZip(file.getName(), "myJson.json")));
+                actualizeKML(FilePacker.retrieveFromZip(file.getAbsolutePath(), "myKml.kml"));
+                actualizeJSON(new File(FilePacker.retrieveFromZip(file.getAbsolutePath(), "myJson.json")));
             }else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
@@ -349,7 +349,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         if(JNOTE_FILE == null) {
             saveJnoteAs();
         } else {
-            FilePacker.createZip(JNOTE_FILE.getName(), new ArrayList<>(Arrays.asList(
+            FilePacker.createZip(JNOTE_FILE.getAbsolutePath(), new ArrayList<>(Arrays.asList(
                     "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myJson.json",
                     "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myKml.kml"
             )));

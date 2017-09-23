@@ -82,7 +82,6 @@ public class FilePacker {
         } catch (NullPointerException e) {
             e.printStackTrace();
         }
-
     }
 
     /**
