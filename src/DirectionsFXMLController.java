@@ -221,7 +221,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
          * String defFilePath = "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\20170803_183338.kml"
          */
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(".\\"));
+        fileChooser.setInitialDirectory(new File("./"));
         File file = fileChooser.showOpenDialog(DirectionsApiMainApp.getPrimaryStage());
         if(file != null) {
             int i = file.getName().lastIndexOf('.');
@@ -265,7 +265,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     public void saveKmlAs() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(".\\"));
+        fileChooser.setInitialDirectory(new File("./"));
         FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
                 "KML files (*.kml)",
                 "*.kml");
@@ -293,7 +293,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     public void saveJsonAs() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(".\\"));
+        fileChooser.setInitialDirectory(new File("./"));
         FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
                 "Json files (*.json)",
                 "*.json");
@@ -331,7 +331,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
 
     public void saveJnoteAs() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setInitialDirectory(new File(".\\"));
+        fileChooser.setInitialDirectory(new File("/"));
         FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
                 "Jnote files (*.jnote)",
                 "*.jnote");
@@ -349,10 +349,17 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         if(JNOTE_FILE == null) {
             saveJnoteAs();
         } else {
-            FilePacker.createZip(JNOTE_FILE.getAbsolutePath(), new ArrayList<>(Arrays.asList(
-                    "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myJson.json",
-                    "C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myKml.kml"
-            )));
+        	if(System.getProperty("os.name").equals("Linux")) {
+        		FilePacker.createZip(JNOTE_FILE.getAbsolutePath(), new ArrayList<>(Arrays.asList(
+        				"/home/armstr/git/my_GMapsFX/files/myJson.json",
+        				"/home/armstr/git/my_GMapsFX/files/myKml.kml"
+        				)));
+        	} else {
+        		FilePacker.createZip(JNOTE_FILE.getAbsolutePath(), new ArrayList<>(Arrays.asList(
+        				"C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myJson.json",
+        				"C:\\Users\\Bob S\\IdeaProjects\\my_GMapsFX\\files\\myKml.kml"
+        				)));
+        	}
         }
     }
 
@@ -486,7 +493,7 @@ public class DirectionsFXMLController implements Initializable, MapComponentInit
         geocodingService = new GeocodingService();
         MapOptions options = new MapOptions();
 
-        File[] files = new File(".\\tmp\\").listFiles();
+        File[] files = new File("./tmp").listFiles();
         if(files!=null) { //some JVMs return null for empty dirs
             for(File f: files) {
                 f.delete();
